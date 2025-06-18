@@ -1,0 +1,22 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  font-family: 'Kanit', sans-serif;
+}
+
+
+:root {
+  --button-disable: #d3d3d3;
+  --color-disable: #a9a9a9;
+  --color-theme-main: #ffffff;
+  --color-theme-sec: #8a8a8a;
+  --color-theme-text: #ffffff;
+}
+
+html, body {
+  font-family: 'Kanit', sans-serif;
+  height: 100%;
+}

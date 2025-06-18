@@ -1,0 +1,9 @@
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;   /* จัดแนวตั้งกลาง */
+  width: 100%;
+  min-height: 100vh;         /* ให้สูงอย่างน้อยเท่าหน้าจอ */
+  box-sizing: border-box;    /* ให้ padding ไม่ดันขอบ container */
+}

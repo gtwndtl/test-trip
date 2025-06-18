@@ -1,0 +1,34 @@
+.home-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100vh;
+}
+
+
+.chat-page-content {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    height: 90vh;
+    gap: 16px;
+    padding: 10px;
+}
+
+.chat-page-section-1,
+.chat-page-section-2 {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: #F9F0F0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+
+.chat-page-recommend,
+.chat-page-map {
+    flex: 1;
+    padding: 10px;
+}
