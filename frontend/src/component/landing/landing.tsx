@@ -5,8 +5,8 @@ import FeaturesSection from './features-section/features-section';
 const LandingPage = () => {
   return (
     <div className="landing-page">
-        <HeroSection />
-        <FeaturesSection />
+      <div className="hero-section"><HeroSection /></div>
+      <div className="features-section"><FeaturesSection /></div>
     </div>
   );
 };

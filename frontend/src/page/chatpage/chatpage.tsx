@@ -1,8 +1,8 @@
-import Navbar from "../home/navbar/navbar";
-import Chat from "./component/chat/chat";
+import Navbar from "../../component/navbar/navbar";
+import Chat from "../../component/chat/chat";
 import './chatpage.css';
-import Recommend from "./component/recommend/recommend";
-import Map from "./component/map/map";
+import Recommend from "../../component/recommend/recommend";
+import Map from "../../component/map/map";
 
 const ChatPage = () => {
     return (

@@ -4,9 +4,8 @@
   box-sizing: border-box;
   scroll-behavior: smooth;
   overflow-x: hidden;
-  font-family: 'Kanit', sans-serif;
+  font-family: "Kanit", sans-serif;
 }
-
 
 :root {
   --button-disable: #d3d3d3;
@@ -16,7 +15,8 @@
   --color-theme-text: #ffffff;
 }
 
-html, body {
-  font-family: 'Kanit', sans-serif;
+html,
+body {
+  font-family: "Kanit", sans-serif;
   height: 100%;
 }

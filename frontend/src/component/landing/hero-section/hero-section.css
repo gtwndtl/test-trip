@@ -26,7 +26,6 @@
   text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
 }
 
-
 .overlay button {
   padding: 12px 24px;
   font-size: 1rem;
@@ -41,5 +40,3 @@
 .overlay button:hover {
   background-color: #f0f0f0;
 }
-
-

@@ -38,24 +38,24 @@
   margin-bottom: 16px;
 
   /* Hide scrollbars */
-  scrollbar-width: none;            /* Firefox */
-  -ms-overflow-style: none;         /* IE 10+ */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
 }
 
 .chat-messages::-webkit-scrollbar {
-  display: none;                    /* Chrome, Safari */
+  display: none; /* Chrome, Safari */
 }
 
 .chat-message {
   max-width: 70%;
-  height: 60px;                     /* Fixed height for consistency */
+  height: 60px; /* Fixed height for consistency */
   box-sizing: border-box;
   padding: 10px 14px;
   border-radius: 16px;
   font-size: 14px;
   line-height: 1.5;
   word-wrap: break-word;
-  flex-shrink: 0;                   /* Prevent shrinking when overflowing */
+  flex-shrink: 0; /* Prevent shrinking when overflowing */
   display: flex;
   align-items: center;
 }
