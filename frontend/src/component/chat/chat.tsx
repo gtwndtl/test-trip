@@ -27,11 +27,13 @@ const Chat = () => {
 
   return (
     <div className="chat-container">
+      {/* Header Section */}
       <div className="chat-header">
-        <h3>Let me help you to planing</h3>
-        <p>Just describe your stay preferences and i'll bring you the most personalised results.</p>
+        <h3>Let me help you to plan your trip</h3>
+        <p>Just describe your stay preferences and I’ll bring you the most personalised results.</p>
       </div>
 
+      {/* Message List Section */}
       <div className="chat-messages">
         {messages.map((msg, index) => (
           <div
@@ -44,9 +46,10 @@ const Chat = () => {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Input Section */}
       <div className="chat-input">
         <Input
-          placeholder="Ask anything"
+          placeholder="Ask anything..."
           value={chatInput}
           onChange={(e) => setChatInput(e.target.value)}
           onKeyDown={handleKeyDown}

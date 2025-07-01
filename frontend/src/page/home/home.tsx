@@ -7,7 +7,9 @@ import LandingPage from "../../component/landing/landing";
 const Home = () => {
   return (
     <div className="home-container">
-      <Navbar />
+      <div className="navbar-container">
+        <Navbar />
+      </div>
       <LandingPage />
       <Footer />
     </div>
