@@ -3,6 +3,7 @@ import React, { StrictMode } from "react";
 import Home from "./page/home/home";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import ChatPage from "./page/chatpage/chatpage";
+import Landing from "./test/landing";
 
 const MainRoutes: React.FC = () => {
   const router = createBrowserRouter([
@@ -13,6 +14,10 @@ const MainRoutes: React.FC = () => {
     {
       path: "/chat",
       element: <ChatPage />,
+    },
+    {
+      path: "/landing",
+      element: <Landing />,
     },
   ]);
 

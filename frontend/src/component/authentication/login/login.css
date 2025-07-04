@@ -1,0 +1,21 @@
+.login-container {
+    display: flex;
+    flex-direction: row;
+    height: 60vh;
+    width: 100%;
+}
+
+.left-section,
+.right-section {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+}
+
+.right-section {
+    background-image: url('../../../assets/night.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
