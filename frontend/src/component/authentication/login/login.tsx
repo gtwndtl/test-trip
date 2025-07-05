@@ -1,6 +1,5 @@
 import './login.css';
-import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Form, Input, Flex } from 'antd';
+import { Button, Form, Input, Flex, Divider } from 'antd';
 
 
 const LoginPage = () => {
@@ -8,45 +7,41 @@ const LoginPage = () => {
         console.log('Received values of form: ', values);
     };
     return (
-        <div className="login-container">
-            <div className="left-section">
-                <Form
-                    name="login"
-                    initialValues={{ remember: true }}
-                    style={{ maxWidth: 360 }}
-                    onFinish={onFinish}
-                >
-                    <Form.Item
-                        name="username"
-                        rules={[{ required: true, message: 'Please input your Username!' }]}
-                    >
-                        <Input prefix={<UserOutlined />} placeholder="Username" />
-                    </Form.Item>
-                    <Form.Item
-                        name="password"
-                        rules={[{ required: true, message: 'Please input your Password!' }]}
-                    >
-                        <Input prefix={<LockOutlined />} type="password" placeholder="Password" />
-                    </Form.Item>
-                    <Form.Item>
-                        <Flex justify="space-between" align="center">
-                            <Form.Item name="remember" valuePropName="checked" noStyle>
-                                <Checkbox>Remember me</Checkbox>
-                            </Form.Item>
-                            <a href="">Forgot password</a>
-                        </Flex>
-                    </Form.Item>
-
-                    <Form.Item>
-                        <Button block type="primary" htmlType="submit">
-                            Log in
-                        </Button>
-                        or <a href="">Register now!</a>
-                    </Form.Item>
-                </Form>
+        <div className="login-page">
+            <div className="login-left">
+                <div className="login-form">
+                    <Form name="login"
+                        onFinish={onFinish}>
+                        <div className="login-header">
+                            <span className="login-title">TRIP PLANNER</span>
+                        </div>
+                        <div className="signup">
+                            <p className="signup-text">Are you have account?</p>
+                            <a className="signup-link" href="">Sign up</a>
+                        </div>
+                        <Form.Item name="email" rules={[{ type: 'email', required: true, message: 'Please input your Email!' }]}>
+                            <Input placeholder="Email" />
+                        </Form.Item>
+                        <Form.Item name="password" rules={[{ required: true, message: 'Please input your Password!' }]}>
+                            <Input type="password" placeholder="Password" />
+                        </Form.Item>
+                        <div style={{ marginBottom: 16 }}>
+                            <Flex justify="flex-end" align="center">
+                                <a className="login-forgot" href="">Forgot password?</a>
+                            </Flex>
+                        </div>
+                        <Form.Item>
+                            <Button block type="primary" htmlType="submit">
+                                Log in
+                            </Button>
+                        </Form.Item>
+                    </Form>
+                    <Divider plain style={{ color: '#9BA5B7' }}>เดี๋ยวมาทำ</Divider>
+                </div>
             </div>
-            <div className="right-section"></div>
+            <div className="login-right"></div>
         </div>
+
     )
 }
 

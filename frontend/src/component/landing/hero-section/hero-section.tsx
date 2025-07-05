@@ -12,8 +12,9 @@ const HeroSection = () => {
       <div className="overlay">
         <h1>TRIP PLANNER</h1>
         <p>จัดสรรการเดินทางโดยง่ายเพียงแค่ระบุสถานที่</p>
-        <button onClick={() => navigate('/chat')}
-          style={{ cursor: 'pointer' }}>เริ่มต้นการวางแผน</button>
+        <button className="hero-button" onClick={() => navigate('/chat')}>
+          เริ่มต้นการวางแผน
+        </button>
       </div>
     </div>
   );

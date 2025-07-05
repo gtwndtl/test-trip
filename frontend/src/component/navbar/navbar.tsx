@@ -1,4 +1,4 @@
-import { Dropdown, Modal } from 'antd';
+import { Dropdown } from 'antd';
 import {
   MenuOutlined,
   QuestionCircleOutlined,
@@ -8,14 +8,16 @@ import { useNavigate } from 'react-router-dom';
 import './navbar.css';
 import { useState } from 'react';
 import LoginPage from '../authentication/login/login';
+import Modal from '../modal/modal';
+
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const [modal2Open, setModal2Open] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const handleMenuClick = ({ key }: { key: string }) => {
     if (key === 'login') {
-      setModal2Open(true);
+      setModalOpen(true);
     } else if (key === 'setting') {
       navigate('/');
     }
@@ -36,16 +38,9 @@ const Navbar = () => {
         <span>TRIP PLANNER</span>
       </div>
 
-      <Modal
-        centered
-        open={modal2Open}
-        footer={null}
-        onCancel={() => setModal2Open(false)}
-      >
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
         <LoginPage />
       </Modal>
-
-
 
       <div className="navbar-links">
         <Dropdown
