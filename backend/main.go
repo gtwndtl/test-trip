@@ -1,6 +1,9 @@
 package main
 
 import (
+	"time"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"github.com/gtwndtl/trip-spark-builder/config"
@@ -11,70 +14,103 @@ import (
 	"github.com/gtwndtl/trip-spark-builder/controller/Shortestpath"
 	"github.com/gtwndtl/trip-spark-builder/controller/Trips"
 	"github.com/gtwndtl/trip-spark-builder/controller/User"
+	"github.com/gtwndtl/trip-spark-builder/middlewares"
 )
 
 func main() {
-	// สร้างการเชื่อมต่อฐานข้อมูล และเก็บไว้ใน config.db
+	// Database setup
 	config.ConnectionDB()
-
-	// ดึงตัวแปร db ที่เก็บ connection ออกมาใช้
 	db := config.DB()
-
-	// สร้างตาราง (migrate)
-	config.SetupDatabase()// ✅ Create tables first
-
-	config.LoadExcelData(config.DB())// ✅ Load data after tables exist
+	config.SetupDatabase()
+	config.LoadExcelData(db)
 
 	r := gin.Default()
 
+	// (ถ้าต้องการเปิด CORS ให้เปิด comment ตามที่ตั้งใจไว้)
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"}, // เปลี่ยนให้ตรงกับ origin frontend
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
+	// Controller instances
 	accommodationCtrl := Accommodation.NewAccommodationController(db)
-	r.POST("/accommodations", accommodationCtrl.CreateAccommodation)
-	r.GET("/accommodations", accommodationCtrl.GetAll)
-	r.GET("/accommodations/:id", accommodationCtrl.GetByID)
-	r.PUT("/accommodations/:id", accommodationCtrl.Update)
-	r.DELETE("/accommodations/:id", accommodationCtrl.Delete)
-
 	conditionCtrl := Condition.NewConditionController(db)
-	r.POST("/conditions", conditionCtrl.Create)
-	r.GET("/conditions", conditionCtrl.GetAll)
-	r.GET("/conditions/:id", conditionCtrl.GetByID)
-	r.PUT("/conditions/:id", conditionCtrl.Update)
-	r.DELETE("/conditions/:id", conditionCtrl.Delete)
-
 	landmarkCtrl := Landmark.NewLandmarkController(db)
-	r.POST("/landmarks", landmarkCtrl.CreateLandmark)
-	r.GET("/landmarks", landmarkCtrl.GetAllLandmarks)
-	r.GET("/landmarks/:id", landmarkCtrl.GetLandmarkByID)
-	r.PUT("/landmarks/:id", landmarkCtrl.UpdateLandmark)
-	r.DELETE("/landmarks/:id", landmarkCtrl.DeleteLandmark)
-
 	restaurantCtrl := Restaurant.NewRestaurantController(db)
-	r.POST("/restaurants", restaurantCtrl.CreateRestaurant)
-	r.GET("/restaurants", restaurantCtrl.GetAllRestaurants)
-	r.GET("/restaurants/:id", restaurantCtrl.GetRestaurantByID)
-	r.PUT("/restaurants/:id", restaurantCtrl.UpdateRestaurant)
-	r.DELETE("/restaurants/:id", restaurantCtrl.DeleteRestaurant)
-
 	userCtrl := User.NewUserController(db)
-	r.POST("/users", userCtrl.CreateUser)
-	r.GET("/users", userCtrl.GetAllUsers)
-	r.GET("/users/:id", userCtrl.GetUserByID)
-	r.PUT("/users/:id", userCtrl.UpdateUser)
-	r.DELETE("/users/:id", userCtrl.DeleteUser)
-
 	tripsCtrl := Trips.NewTripsController(db)
-	r.POST("/trips", tripsCtrl.CreateTrip)
-	r.GET("/trips", tripsCtrl.GetAllTrips)
-	r.GET("/trips/:id", tripsCtrl.GetTripByID)
-	r.PUT("/trips/:id", tripsCtrl.UpdateTrip)
-	r.DELETE("/trips/:id", tripsCtrl.DeleteTrip)
-
 	shortestpathCtrl := Shortestpath.NewShortestPathController(db)
-	r.POST("/shortest-paths", shortestpathCtrl.CreateShortestPath)
-	r.GET("/shortest-paths", shortestpathCtrl.GetAllShortestPaths)
-	r.GET("/shortest-paths/:id", shortestpathCtrl.GetShortestPathByID)
-	r.PUT("/shortest-paths/:id", shortestpathCtrl.UpdateShortestPath)
-	r.DELETE("/shortest-paths/:id", shortestpathCtrl.DeleteShortestPath)
 
-	r.Run() // รันเซิร์ฟเวอร์ที่พอร์ต 8080
+	// Public routes (ไม่ต้องตรวจสอบ token)
+	r.POST("/signinuser", userCtrl.SignInUser)
+
+	// สร้าง group สำหรับ route ที่ต้องตรวจสอบ token (AuthMiddleware)
+	authorized := r.Group("/")
+	authorized.Use(middlewares.AuthMiddleware())
+
+	// Accommodation routes (ต้องล็อกอิน)
+	authorized.POST("/accommodations", accommodationCtrl.CreateAccommodation)
+	authorized.GET("/accommodations", accommodationCtrl.GetAll)
+	authorized.GET("/accommodations/:id", accommodationCtrl.GetByID)
+	authorized.PUT("/accommodations/:id", accommodationCtrl.Update)
+	authorized.DELETE("/accommodations/:id", accommodationCtrl.Delete)
+
+	// Condition routes
+	authorized.POST("/conditions", conditionCtrl.Create)
+	authorized.GET("/conditions", conditionCtrl.GetAll)
+	authorized.GET("/conditions/:id", conditionCtrl.GetByID)
+	authorized.PUT("/conditions/:id", conditionCtrl.Update)
+	authorized.DELETE("/conditions/:id", conditionCtrl.Delete)
+
+	// Landmark routes
+	authorized.POST("/landmarks", landmarkCtrl.CreateLandmark)
+	authorized.GET("/landmarks", landmarkCtrl.GetAllLandmarks)
+	authorized.GET("/landmarks/:id", landmarkCtrl.GetLandmarkByID)
+	authorized.PUT("/landmarks/:id", landmarkCtrl.UpdateLandmark)
+	authorized.DELETE("/landmarks/:id", landmarkCtrl.DeleteLandmark)
+
+	// Restaurant routes
+	authorized.POST("/restaurants", restaurantCtrl.CreateRestaurant)
+	authorized.GET("/restaurants", restaurantCtrl.GetAllRestaurants)
+	authorized.GET("/restaurants/:id", restaurantCtrl.GetRestaurantByID)
+	authorized.PUT("/restaurants/:id", restaurantCtrl.UpdateRestaurant)
+	authorized.DELETE("/restaurants/:id", restaurantCtrl.DeleteRestaurant)
+
+	// User routes (ยกเว้นสร้าง user และ login ที่ public)
+	authorized.GET("/users", userCtrl.GetAllUsers)
+	authorized.GET("/users/:id", userCtrl.GetUserByID)
+	authorized.PUT("/users/:id", userCtrl.UpdateUser)
+	authorized.DELETE("/users/:id", userCtrl.DeleteUser)
+	authorized.POST("/users", userCtrl.CreateUser) // ถ้าต้องการให้สร้าง user ต้องล็อกอินก่อน ถ้าไม่ก็เอาไว้ public ก็ได้
+
+	// Trips routes
+	authorized.POST("/trips", tripsCtrl.CreateTrip)
+	authorized.GET("/trips", tripsCtrl.GetAllTrips)
+	authorized.GET("/trips/:id", tripsCtrl.GetTripByID)
+	authorized.PUT("/trips/:id", tripsCtrl.UpdateTrip)
+	authorized.DELETE("/trips/:id", tripsCtrl.DeleteTrip)
+
+	// Shortest Path routes
+	authorized.POST("/shortest-paths", shortestpathCtrl.CreateShortestPath)
+	authorized.GET("/shortest-paths", shortestpathCtrl.GetAllShortestPaths)
+	authorized.GET("/shortest-paths/:id", shortestpathCtrl.GetShortestPathByID)
+	authorized.PUT("/shortest-paths/:id", shortestpathCtrl.UpdateShortestPath)
+	authorized.DELETE("/shortest-paths/:id", shortestpathCtrl.DeleteShortestPath)
+
+	// Run server
+	r.Run(":8080")
 }
+
+// r.Use(cors.New(cors.Config{
+	// 	AllowOrigins:     []string{"http://localhost:5173"}, // เปลี่ยนให้ตรงกับ origin frontend
+	// 	AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+	// 	AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+	// 	ExposeHeaders:    []string{"Content-Length"},
+	// 	AllowCredentials: true,
+	// 	MaxAge:           12 * time.Hour,
+	// }))
+

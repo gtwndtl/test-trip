@@ -1,11 +1,37 @@
 import './login.css';
-import { Button, Form, Input, Flex, Divider } from 'antd';
-
+import { Button, Form, Input, Flex, Divider, message } from 'antd';
+import type { SignInInterface } from '../../../interfaces/SignIn';
+import { useNavigate } from 'react-router-dom';
+import { SignInUser } from '../../../services/https';
 
 const LoginPage = () => {
-    const onFinish = (values: any) => {
+    const navigate = useNavigate();
+
+    const onFinish = async (values: any) => {
         console.log('Received values of form: ', values);
+        const signInData: SignInInterface = {
+        Email: values.email,
+        Password: values.password,
     };
+
+    try {
+        const result = await SignInUser(signInData);
+        console.log("SignInUser result:", result); // ดูค่า result ใน console
+
+        if (result && result.token && result.token_type) {
+            localStorage.setItem('token', result.token);
+            localStorage.setItem('token_type', result.token_type);
+            alert("Login successful"); // เปลี่ยนเป็น alert ดูว่าแสดงไหม
+            console.log("Navigating to /home");
+            navigate('/home');
+        } else {
+            message.error("Invalid login response");
+        }
+    } catch (error: any) {
+        message.error(error.message || "Login failed. Please check your credentials.");
+    }
+    };
+
     return (
         <div className="login-page">
             <div className="login-left">

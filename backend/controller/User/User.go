@@ -2,10 +2,15 @@ package User
 
 import (
 	"net/http"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"github.com/gtwndtl/trip-spark-builder/entity"
+	"github.com/gtwndtl/trip-spark-builder/config"
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/gtwndtl/trip-spark-builder/services"
 )
 
 type UserController struct {
@@ -77,4 +82,53 @@ func (ctrl *UserController) DeleteUser(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "ลบผู้ใช้เรียบร้อยแล้ว"})
+}
+
+type (
+	Authen struct {
+		Email string 
+
+		Password string 
+	}
+)
+
+func (ctrl *UserController) SignInUser(c *gin.Context) {
+
+	var payload Authen
+	var user entity.User
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+		return
+	}
+	// ค้นหา user ด้วย Username ที่ผู้ใช้กรอกเข้ามา
+	if err := config.DB().Raw("SELECT * FROM users WHERE email = ?", payload.Email).Scan(&user).Error; err != nil {
+		fmt.Println("Error finding user:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+
+	}
+	// ตรวจสอบรหัสผ่าน
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password))
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "password is incerrect"})
+		fmt.Println("Password comparison error:", err)
+		return
+	}
+	// ตรวจสอบว่า user มีอยู่จริงหรือไม่
+	jwtWrapper := services.JwtWrapper{ 
+		SecretKey: "SvNQpBN8y3qlVrsGAYYWoJJk56LtzFHx",
+		Issuer: "AuthService",
+		ExpirationHours: 24,
+	}
+	// สร้าง JWT Token
+	signedToken, err := jwtWrapper.GenerateToken(user.Email)
+	if err != nil {
+		fmt.Println("Error signing token:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "error signing token"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"token_type": "Bearer", "token": signedToken, "id": user.ID})
 }

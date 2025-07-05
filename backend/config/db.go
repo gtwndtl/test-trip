@@ -38,6 +38,17 @@ func SetupDatabase() {
 		&entity.User{},
 	)
 	fmt.Println("✅ Tables migrated successfully")
+
+	hashedPassword, _ := HashPassword("123456")
+
+	user := entity.User{
+		Password:   hashedPassword,
+		Firstname:  "John",
+		Lastname:   "Doe",
+		Age:        30,
+		Birthday:   time.Date(1993, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	db.FirstOrCreate(&user, entity.User{Email: "a@gmail.com"})
 }
 
 func LoadExcelData(db *gorm.DB) {
@@ -165,3 +176,16 @@ func loadRestaurants(db *gorm.DB) {
 		db.Create(&data)
 	}
 }
+
+// Create a default user if not exists
+// func CreateDefaultUser(db *gorm.DB) {
+// 	user := entity.User{
+// 		Password:   "12345678",
+// 		Firstname:  "John",
+// 		Lastname:   "Doe",
+// 		Age:        30,
+// 		Birthday:   time.Date(1993, 1, 1, 0, 0, 0, 0, time.UTC),
+// 		Email:      "a@gmail.com",
+// 	}
+// 	db.FirstOrCreate(&user, entity.User{Email: "a@gmail.com"})
+// }
