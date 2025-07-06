@@ -1,18 +1,39 @@
+// RegisterPage.tsx
 import { motion } from 'framer-motion';
 import './register.css';
-import { Button, Form, Input } from 'antd';
+import { Button, Form, Input, message } from 'antd';
+import { CreateUser } from '../../../services/https';
+import type { UserInterface } from '../../../interfaces/User';
+// import { GoogleOAuthProvide } from '@react-oauth/google';
+// import { GoogleLogin } from '@react-oauth/google';
+// import { jwtDecode } from 'jwt-decode';
+// const CLIENT_ID = "427408818914-2fs6vg5tselbmp2l5b4jk0ojl6p5ud39.apps.googleusercontent.com"
 
 const RegisterPage = ({ onSwitch }: { onSwitch: () => void }) => {
-    const onFinish = (values: any) => {
-        console.log('Received values of form: ', values);
+    const [form] = Form.useForm();
+
+    const onFinish = async (values: any) => {
+        try {
+            const newUser: UserInterface = {
+                Email: values.email,
+                Password: values.password,
+            };
+            await CreateUser(newUser);
+            message.success('สมัครสมาชิกสำเร็จ!');
+            form.resetFields();
+            onSwitch(); // ไปหน้า login
+        } catch (error) {
+            message.error('ไม่สามารถสมัครสมาชิกได้');
+            console.error('Registration Error:', error);
+        }
     };
 
     return (
         <div className="register-page">
             <motion.div
                 className="register-left"
-                initial={{ x: '100%' }}      // เริ่มจากขวานอกจอ
-                animate={{ x: 0 }}           // เคลื่อนเข้ามาอยู่ตำแหน่งปกติ
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
                 transition={{ duration: 0.8, ease: 'easeOut' }}
             />
             <div className="register-right">
@@ -24,7 +45,7 @@ const RegisterPage = ({ onSwitch }: { onSwitch: () => void }) => {
                         <p className="signin-text">Already have an account?</p>
                         <a className="signin-link" onClick={onSwitch}>Sign In</a>
                     </div>
-                    <Form name="register" onFinish={onFinish}>
+                    <Form form={form} name="register" onFinish={onFinish}>
                         <Form.Item
                             name="email"
                             rules={[{ type: 'email', required: true, message: 'Please input your Email!' }]}
@@ -41,7 +62,18 @@ const RegisterPage = ({ onSwitch }: { onSwitch: () => void }) => {
 
                         <Form.Item
                             name="confirmPassword"
-                            rules={[{ required: true, message: 'Please confirm your Password!' }]}
+                            dependencies={['password']}
+                            rules={[
+                                { required: true, message: 'Please confirm your Password!' },
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        if (!value || getFieldValue('password') === value) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject(new Error('Passwords do not match!'));
+                                    },
+                                }),
+                            ]}
                         >
                             <Input.Password placeholder="Confirm Password" />
                         </Form.Item>

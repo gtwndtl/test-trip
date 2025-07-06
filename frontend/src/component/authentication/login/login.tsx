@@ -3,7 +3,9 @@ import './login.css';
 import { Button, Form, Input, Flex, Divider, message } from 'antd';
 import type { SignInInterface } from '../../../interfaces/SignIn';
 import { useNavigate } from 'react-router-dom';
-import { SignInUser } from '../../../services/https';
+import { SignInUser, CreateUser, GetAllUsers } from '../../../services/https';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 
 const LoginPage = ({ onSwitch, isFirstRender }: { onSwitch: () => void; isFirstRender: boolean }) => {
     const navigate = useNavigate();
@@ -22,9 +24,11 @@ const LoginPage = ({ onSwitch, isFirstRender }: { onSwitch: () => void; isFirstR
             if (result && result.token && result.token_type) {
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('token_type', result.token_type);
+                console.log("Token",result.token);
+                navigate('/home');
                 alert("Login successful"); // เปลี่ยนเป็น alert ดูว่าแสดงไหม
                 console.log("Navigating to /home");
-                navigate('/chat');
+                
             } else {
                 message.error("Invalid login response");
             }
@@ -32,6 +36,44 @@ const LoginPage = ({ onSwitch, isFirstRender }: { onSwitch: () => void; isFirstR
             message.error(error.message || "Login failed. Please check your credentials.");
         }
     };
+
+    const handleGoogleLogin = async (credentialResponse: any) => {
+    try {
+        const decoded: any = jwtDecode(credentialResponse.credential);
+        const email = decoded.email;
+        const fakePassword = "google_oauth_password";
+
+        const users = await GetAllUsers();
+        const userExists = users.find((u: any) => u.Email === email);
+
+        if (!userExists) {
+            // ยังไม่มี user นี้ → สร้างใหม่
+            await CreateUser({ Email: email, Password: fakePassword });
+            alert("สมัครสมาชิกด้วย Google สำเร็จ");
+            console.log("Created new user with Google email:", email);
+            message.success("สมัครสมาชิกด้วย Google สำเร็จ");
+        }
+
+        // ล็อกอินด้วย email + รหัสจำลอง
+        const loginResult = await SignInUser({ Email: email, Password: fakePassword });
+        if (loginResult && loginResult.token && loginResult.token_type) {
+            localStorage.setItem("token", loginResult.token);
+            localStorage.setItem("token_type", loginResult.token_type);
+            navigate("/home");
+            alert("Login successful");
+            console.log("Navigating to /chat");
+            message.success("เข้าสู่ระบบด้วย Google สำเร็จ");
+
+            // ✅ ย้าย navigate มาไว้หลัง login สำเร็จ
+            
+        } else {
+            message.error("เข้าสู่ระบบล้มเหลว");
+        }
+    } catch (err) {
+        console.error("Google login failed", err);
+        message.error("Google login ล้มเหลว");
+    }
+};
 
     return (
         <div className="login-page">
@@ -80,6 +122,13 @@ const LoginPage = ({ onSwitch, isFirstRender }: { onSwitch: () => void; isFirstR
                             }>
                                 Sign In with Apple
                             </Button>
+                            <GoogleLogin
+  onSuccess={handleGoogleLogin}
+  onError={() => message.error("Google login ล้มเหลว")}
+  theme="outline"           // กรอบเส้นบาง
+  size="medium"             // ขนาดกลาง
+  text="signin_with"        // แสดงข้อความ "Sign in with Google"
+/>
 
                             <Button type="text" className="google-login-button" block icon={
                                 <svg className="google-icon" viewBox="0 0 48 48" height="1em" width="1em">

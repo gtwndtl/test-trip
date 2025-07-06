@@ -28,10 +28,27 @@ func (ctrl *UserController) CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// ✅ ตรวจสอบว่ามีรหัสผ่าน
+	if user.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ต้องระบุรหัสผ่าน"})
+		return
+	}
+
+	// ✅ เข้ารหัส (hash) รหัสผ่าน
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถเข้ารหัสรหัสผ่านได้"})
+		return
+	}
+	user.Password = string(hashedPassword)
+
+	// ✅ สร้างผู้ใช้
 	if err := ctrl.DB.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถสร้างผู้ใช้ได้"})
 		return
 	}
+
 	c.JSON(http.StatusOK, user)
 }
 
