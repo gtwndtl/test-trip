@@ -19,6 +19,7 @@
     background-image: url('../../../assets/night.jpg');
     background-size: cover;
     background-position: center;
+    z-index: 10;
 }
 
 
