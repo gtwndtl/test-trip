@@ -2,7 +2,6 @@ package User
 
 import (
 	"net/http"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -110,42 +109,44 @@ type (
 )
 
 func (ctrl *UserController) SignInUser(c *gin.Context) {
+    var payload Authen
+    var user entity.User
 
-	var payload Authen
-	var user entity.User
+    if err := c.ShouldBindJSON(&payload); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
 
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+    // ค้นหา user ด้วย email
+    if err := config.DB().Raw("SELECT * FROM users WHERE email = ?", payload.Email).Scan(&user).Error; err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบผู้ใช้งาน"})
+        return
+    }
 
-		return
-	}
-	// ค้นหา user ด้วย Username ที่ผู้ใช้กรอกเข้ามา
-	if err := config.DB().Raw("SELECT * FROM users WHERE email = ?", payload.Email).Scan(&user).Error; err != nil {
-		fmt.Println("Error finding user:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+    // ตรวจสอบรหัสผ่าน
+    err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password))
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "รหัสผ่านไม่ถูกต้อง"})
+        return
+    }
 
-	}
-	// ตรวจสอบรหัสผ่าน
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password))
+    // สร้าง JWT Token
+    jwtWrapper := services.JwtWrapper{
+        SecretKey:       "SvNQpBN8y3qlVrsGAYYWoJJk56LtzFHx",
+        Issuer:          "AuthService",
+        ExpirationHours: 24,
+    }
 
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "password is incerrect"})
-		fmt.Println("Password comparison error:", err)
-		return
-	}
-	// ตรวจสอบว่า user มีอยู่จริงหรือไม่
-	jwtWrapper := services.JwtWrapper{ 
-		SecretKey: "SvNQpBN8y3qlVrsGAYYWoJJk56LtzFHx",
-		Issuer: "AuthService",
-		ExpirationHours: 24,
-	}
-	// สร้าง JWT Token
-	signedToken, err := jwtWrapper.GenerateToken(user.Email)
-	if err != nil {
-		fmt.Println("Error signing token:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "error signing token"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"token_type": "Bearer", "token": signedToken, "id": user.ID})
+    signedToken, err := jwtWrapper.GenerateToken(user.Email, user.ID) // ✅ ส่ง user.ID
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "เกิดข้อผิดพลาดในการสร้าง token"})
+        return
+    }
+
+    // ส่ง token กลับไป
+    c.JSON(http.StatusOK, gin.H{
+        "token_type": "Bearer",
+        "token":      signedToken,
+        "id":         user.ID,
+    })
 }

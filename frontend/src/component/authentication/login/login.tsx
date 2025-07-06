@@ -38,6 +38,7 @@ const LoginPage = ({ onSwitch, isFirstRender }: { onSwitch: () => void; isFirstR
     };
 
     const handleGoogleLogin = async (credentialResponse: any) => {
+        console.log('Received values of form: ', credentialResponse);
     try {
         const decoded: any = jwtDecode(credentialResponse.credential);
         const email = decoded.email;
@@ -56,9 +57,11 @@ const LoginPage = ({ onSwitch, isFirstRender }: { onSwitch: () => void; isFirstR
 
         // ล็อกอินด้วย email + รหัสจำลอง
         const loginResult = await SignInUser({ Email: email, Password: fakePassword });
+        console.log("SignInUser result:", loginResult);
         if (loginResult && loginResult.token && loginResult.token_type) {
             localStorage.setItem("token", loginResult.token);
             localStorage.setItem("token_type", loginResult.token_type);
+            console.log("Token",loginResult.token);
             navigate("/home");
             alert("Login successful");
             console.log("Navigating to /chat");

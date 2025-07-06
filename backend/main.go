@@ -85,7 +85,7 @@ func main() {
 	authorized.GET("/users/:id", userCtrl.GetUserByID)
 	authorized.PUT("/users/:id", userCtrl.UpdateUser)
 	authorized.DELETE("/users/:id", userCtrl.DeleteUser)
-	r.POST("/users", userCtrl.CreateUser) // ถ้าต้องการให้สร้าง user ต้องล็อกอินก่อน ถ้าไม่ก็เอาไว้ public ก็ได้
+	authorized.POST("/users", userCtrl.CreateUser) // ถ้าต้องการให้สร้าง user ต้องล็อกอินก่อน ถ้าไม่ก็เอาไว้ public ก็ได้
 
 	// Trips routes
 	authorized.POST("/trips", tripsCtrl.CreateTrip)
