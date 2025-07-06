@@ -11,7 +11,7 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="footer-brand">TRIP PLANNER</h4>
             <p className="footer-description">
-              Turn your next trip into a hassle-free experience with Trip Planner AI.
+              Turn your next trip into a hassle-free experience with Trip Planner.
             </p>
           </div>
         </div>
@@ -43,7 +43,7 @@ const Footer: React.FC = () => {
       <hr className="footer-divider" />
 
       <div className="footer-bottom">
-        <p>&copy; {new Date().getFullYear()} Trip Planner AI. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} TRIP PLANNER. All rights reserved.</p>
       </div>
     </footer>
   );
