@@ -1,28 +1,20 @@
-import { Carousel } from 'antd';
-import b1 from '../../../assets/a.jpg';
-import b2 from '../../../assets/b.jpg';
-import b3 from '../../../assets/c.jpg';
-import b4 from '../../../assets/d.jpg';
-import b5 from '../../../assets/e.jpg';
 import './hero-section.css';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import b5 from '../../../assets/e.jpg';
 
-const HeroCarousel = () => {
+
+const HeroSection = () => {
   const navigate = useNavigate();
+
   return (
     <div className="hero-section">
-      <Carousel autoplay autoplaySpeed={3500} arrows={false} dots={false}>
-        {[b1, b2, b3, b4, b5].map((image, index) => (
-          <div key={index}>
-            <div className="carousel-bg" style={{ backgroundImage: `url(${image})` }}>
-              <div className="carousel-overlay-fade" />
-            </div>
-          </div>
-        ))}
-      </Carousel>
+      <div className="cards">
+        <figure className="card">
+          <img src={b5} alt="Card Visual" className="card-image" />
+        </figure>
+      </div>
 
-      {/* เนื้อหาทับบน Carousel */}
       <div className="overlay">
         <motion.h1
           initial={{ opacity: 0, y: 50, scale: 0.95 }}
@@ -60,4 +52,4 @@ const HeroCarousel = () => {
   );
 };
 
-export default HeroCarousel;
+export default HeroSection;

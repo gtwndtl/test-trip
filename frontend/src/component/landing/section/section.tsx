@@ -1,0 +1,119 @@
+import { motion } from 'framer-motion';
+import firstPicture from '../../../assets/landing/1.jpg';
+import secondPicture from '../../../assets/landing/2.jpg';
+import thirdPicture from '../../../assets/landing/3.jpg';
+import './section.css';
+
+const Section = () => {
+    return (
+        <div className="section">
+            {/* Step 1 - from right-bottom */}
+            <div className="section-step">
+                <div className="section-step-left">
+                    <motion.div
+                        className="section-step-content"
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        viewport={{ once: true }}
+                    >
+                        <h2>Tell us your destination</h2>
+                        <p>บอกเราว่าคุณอยากไปที่ไหน หรือเลือกจากหมุดหมายยอดนิยม</p>
+                    </motion.div>
+                    <motion.h1
+                        className="section-step-number"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.8 }}
+                        viewport={{ once: true }}
+                    >
+                        01
+                    </motion.h1>
+                </div>
+                <picture className="section-step-image">
+                    <motion.img
+                        src={firstPicture}
+                        alt="destination step"
+                        initial={{ opacity: 0, x: 100, y: 100 }}
+                        whileInView={{ opacity: 1, x: 0, y: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        viewport={{ once: true, amount: 0.3 }}
+                    />
+                </picture>
+            </div>
+
+            {/* Step 2 - from left-bottom */}
+            <div className="section-step reverse">
+                <div className="section-step-left">
+                    <motion.div
+                        className="section-step-content"
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        viewport={{ once: true }}
+                    >
+                        <h2>We’ll plan it for you</h2>
+                        <p>ระบบจะจัดการประมวลผลข้อมูล และเตรียม route ที่เหมาะกับคุณที่สุด</p>
+                    </motion.div>
+                    <motion.h1
+                        className="section-step-number"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.8 }}
+                        viewport={{ once: true }}
+                    >
+                        02
+                    </motion.h1>
+                </div>
+                <picture className="section-step-image">
+                    <motion.img
+                        src={secondPicture}
+                        alt="system planning step"
+                        initial={{ opacity: 0, x: -100, y: 100 }}
+                        whileInView={{ opacity: 1, x: 0, y: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+                        viewport={{ once: true, amount: 0.3 }}
+                    />
+                </picture>
+            </div>
+
+            {/* Step 3 - from right-bottom */}
+            <div className="section-step">
+                <div className="section-step-left">
+                    <motion.div
+                        className="section-step-content"
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        viewport={{ once: true }}
+                    >
+                        <h2>Your trip is ready</h2>
+                        <p>รับแผนการเดินทาง พร้อมเวลาและสถานที่ที่คุณเลือก เดินทางได้เลยทันที</p>
+                    </motion.div>
+                    <motion.h1
+                        className="section-step-number"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.8 }}
+                        viewport={{ once: true }}
+                    >
+                        03
+                    </motion.h1>
+                </div>
+                <picture className="section-step-image">
+                    <motion.img
+                        src={thirdPicture}
+                        alt="trip ready step"
+                        initial={{ opacity: 0, x: 100, y: 100 }}
+                        whileInView={{ opacity: 1, x: 0, y: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+                        viewport={{ once: true, amount: 0.3 }}
+                    />
+                </picture>
+            </div>
+        </div>
+
+    );
+};
+
+export default Section;

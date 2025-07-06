@@ -1,25 +1,35 @@
+import './hero-section.css';
+import { useNavigate } from 'react-router-dom';
 import { Carousel } from 'antd';
+import { motion } from 'framer-motion'; // ✅ เพิ่มตรงนี้
 import b1 from '../../../assets/a.jpg';
 import b2 from '../../../assets/b.jpg';
 import b3 from '../../../assets/c.jpg';
 import b4 from '../../../assets/d.jpg';
 import b5 from '../../../assets/e.jpg';
-import './hero-section.css';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 
-const HeroCarousel = () => {
+const HeroSection = () => {
   const navigate = useNavigate();
+
   return (
     <div className="hero-section">
+      {/* พื้นหลังแบบ Carousel */}
       <Carousel autoplay autoplaySpeed={3500} arrows={false} dots={false}>
-        {[b1, b2, b3, b4, b5].map((image, index) => (
-          <div key={index}>
-            <div className="carousel-bg" style={{ backgroundImage: `url(${image})` }}>
-              <div className="carousel-overlay-fade" />
-            </div>
-          </div>
-        ))}
+        <div>
+          <div className="carousel-bg" style={{ backgroundImage: `url(${b1})` }} />
+        </div>
+        <div>
+          <div className="carousel-bg" style={{ backgroundImage: `url(${b2})` }} />
+        </div>
+        <div>
+          <div className="carousel-bg" style={{ backgroundImage: `url(${b3})` }} />
+        </div>
+        <div>
+          <div className="carousel-bg" style={{ backgroundImage: `url(${b4})` }} />
+        </div>
+        <div>
+          <div className="carousel-bg" style={{ backgroundImage: `url(${b5})` }} />
+        </div>
       </Carousel>
 
       {/* เนื้อหาทับบน Carousel */}
@@ -56,8 +66,9 @@ const HeroCarousel = () => {
           เริ่มต้นการวางแผน
         </motion.button>
       </div>
+
     </div>
   );
 };
 
-export default HeroCarousel;
+export default HeroSection;

@@ -6,16 +6,20 @@
   width: 100%;
   min-height: 100vh;
   box-sizing: border-box;
-  padding-top: 60px; /* หรือเท่ากับความสูง navbar */
+  background-color: white;
 }
 
-.navbar-container {
+
+.head-container {
   position: fixed;
   width: 100%;
   top: 0;
   z-index: 1000;
-  background-color: white;
+  padding: 1rem 2rem;
+  transition: all 0.3s ease;
 }
+
+
 
 /* สำหรับ Chrome, Safari, Edge */
 body::-webkit-scrollbar {
