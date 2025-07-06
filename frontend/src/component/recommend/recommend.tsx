@@ -1,3 +1,5 @@
+import './recommend.css';
+
 const Recommend = () => {
     return (
         <div className="chat-page-recommend">

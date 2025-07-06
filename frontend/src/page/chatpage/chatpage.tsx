@@ -7,7 +7,9 @@ import Navbar from "../../navbar/navbar";
 const ChatPage = () => {
     return (
         <div className="chat-page-container">
-            <Navbar/>
+            <div className="navbar-container">
+                <Navbar />
+            </div>
             <div className="chat-page-content">
                 <div className="chat-page-section-1">
                     <div className="chat-page-messages"><Chat /></div>

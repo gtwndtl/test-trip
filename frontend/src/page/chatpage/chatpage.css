@@ -1,86 +1,45 @@
-.home-container {
+.chat-page-container {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
+  padding-top: 60px;
 }
 
-/* Main Layout */
+.navbar-container {
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1000;
+  background-color: white;
+}
+
 .chat-page-content {
   display: flex;
   flex-direction: row;
-  justify-content: center;
-  align-items: stretch;
-  gap: 16px;
-  padding: 16px;
-  height: 90vh;
-  box-sizing: border-box;
+  flex-grow: 1;
+  width: 100vw;
 }
 
-/* Sections (Left & Right) */
 .chat-page-section-1,
 .chat-page-section-2 {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  background-color: #f9f0f0;
-  border-radius: 8px;
-  overflow: hidden;
-  min-height: 0;
+  box-sizing: border-box;
+  padding: 16px;
 }
 
-/* Content inside sections */
+.chat-page-section-2 {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 16px; /* ระยะห่างเท่ากันระหว่างลูกแต่ละตัว */
+  height: 90vh;
+}
+
+.chat-page-messages,
 .chat-page-recommend,
 .chat-page-map {
   flex: 1;
-  padding: 16px;
-  box-sizing: border-box;
-}
-
-/* === ✅ Responsive Breakpoints === */
-
-/* Tablet & Small Desktop (≤1024px) */
-@media (max-width: 1024px) {
-  .chat-page-content {
-    flex-direction: column;
-    height: auto;
-  }
-
-  .chat-page-section-1,
-  .chat-page-section-2 {
-    width: 100%;
-    height: auto;
-  }
-}
-
-/* Mobile (≤768px) */
-@media (max-width: 768px) {
-  .chat-page-content {
-    padding: 12px;
-    gap: 12px;
-  }
-
-  .chat-page-recommend,
-  .chat-page-map {
-    padding: 12px;
-  }
-}
-
-/* Extra Small Devices (≤480px) */
-@media (max-width: 480px) {
-  .chat-page-content {
-    padding: 10px;
-    gap: 10px;
-  }
-
-  .chat-page-recommend,
-  .chat-page-map {
-    padding: 10px;
-  }
-
-  .chat-page-section-1,
-  .chat-page-section-2 {
-    border-radius: 6px;
-  }
+  border-radius: 16px;
 }

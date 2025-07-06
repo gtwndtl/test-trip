@@ -1,5 +1,5 @@
 import './chat.css';
-import { Input } from 'antd';
+import { Input, Button } from 'antd';
 import { useState, useRef, useEffect } from 'react';
 
 const Chat = () => {
@@ -7,17 +7,21 @@ const Chat = () => {
   const [messages, setMessages] = useState<{ text: string; sender: 'user' | 'bot' }[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const sendMessage = () => {
+    if (chatInput.trim()) {
+      setMessages(prev => [
+        ...prev,
+        { text: chatInput.trim(), sender: 'user' },
+        { text: 'This is a bot response.', sender: 'bot' },
+      ]);
+      setChatInput('');
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (chatInput.trim()) {
-        setMessages(prev => [
-          ...prev,
-          { text: chatInput.trim(), sender: 'user' },
-          { text: 'This is a bot response.', sender: 'bot' },
-        ]);
-        setChatInput('');
-      }
+      sendMessage();
     }
   };
 
@@ -27,13 +31,11 @@ const Chat = () => {
 
   return (
     <div className="chat-container">
-      {/* Header Section */}
       <div className="chat-header">
         <h3>Let me help you to plan your trip</h3>
         <p>Just describe your stay preferences and I’ll bring you the most personalised results.</p>
       </div>
 
-      {/* Message List Section */}
       <div className="chat-messages">
         {messages.map((msg, index) => (
           <div
@@ -46,15 +48,19 @@ const Chat = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Section */}
-      <div className="chat-input">
+      <div className="chat-input" style={{ display: 'flex', gap: 8 }}>
         <Input
           placeholder="Ask anything..."
           value={chatInput}
           onChange={(e) => setChatInput(e.target.value)}
           onKeyDown={handleKeyDown}
           variant="borderless"
+          onPressEnter={sendMessage}
+          style={{ flexGrow: 1 }}
         />
+        <Button type="text" onClick={sendMessage}>
+          Send
+        </Button>
       </div>
     </div>
   );
