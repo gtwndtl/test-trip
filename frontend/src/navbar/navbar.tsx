@@ -1,5 +1,6 @@
-import { Dropdown } from 'antd';
+import { Dropdown, Modal } from 'antd';
 import {
+  CloseCircleOutlined,
   MenuOutlined,
   QuestionCircleOutlined,
   UserOutlined,
@@ -7,19 +8,17 @@ import {
 import { useNavigate } from 'react-router-dom';
 import './navbar.css';
 import { useState } from 'react';
-import LoginPage from '../authentication/login/login';
-import Modal from '../modal/modal';
-
+import Authentication from '../component/authentication/authentication/authentication';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const [modalOpen, setModalOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleMenuClick = ({ key }: { key: string }) => {
     if (key === 'login') {
-      setModalOpen(true);
+      setOpen(true);
     } else if (key === 'setting') {
-      navigate('/');
+      setOpen(true);
     }
   };
 
@@ -38,8 +37,29 @@ const Navbar = () => {
         <span>TRIP PLANNER</span>
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
-        <LoginPage />
+      <Modal
+        open={open}
+        onCancel={() => setOpen(false)}
+        footer={null}
+        width={800}
+        closeIcon={<CloseCircleOutlined />}
+        className="custom-modal"
+        styles={{
+          body: {
+            padding: 0,
+            overflow: "hidden",
+            background: "transparent", // สำคัญ: ลบพื้นหลังขาวใน body
+          },
+          content: {
+            background: "transparent", // สำคัญ: ลบพื้นหลังขาวของ modal box
+            boxShadow: "none",         // ลบเงารอบ modal
+          },
+          mask: {
+            backgroundColor: "rgba(0, 0, 0, 0.6)", // ความมืดของพื้นหลัง modal
+          },
+        }}
+      >
+        <Authentication />
       </Modal>
 
       <div className="navbar-links">
