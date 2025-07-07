@@ -58,7 +58,7 @@ func LoadExcelData(db *gorm.DB) {
 }
 
 func loadAccommodations(db *gorm.DB) {
-	f, err := excelize.OpenFile("config/Attraction_data_4.xlsx")
+	f, err := excelize.OpenFile("config/places_data_3.xlsx")
 	if err != nil {
 		panic(err)
 	}
@@ -98,7 +98,7 @@ func loadAccommodations(db *gorm.DB) {
 }
 
 func loadLandmarks(db *gorm.DB) {
-	f, err := excelize.OpenFile("config/places_data_3.xlsx")
+	f, err := excelize.OpenFile("config/Attraction_data_4.xlsx")
 	if err != nil {
 		panic(err)
 	}
