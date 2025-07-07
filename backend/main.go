@@ -14,6 +14,7 @@ import (
 	"github.com/gtwndtl/trip-spark-builder/controller/Shortestpath"
 	"github.com/gtwndtl/trip-spark-builder/controller/Trips"
 	"github.com/gtwndtl/trip-spark-builder/controller/User"
+	"github.com/gtwndtl/trip-spark-builder/controller/GenTrip"
 	"github.com/gtwndtl/trip-spark-builder/middlewares"
 )
 
@@ -44,6 +45,7 @@ func main() {
 	userCtrl := User.NewUserController(db)
 	tripsCtrl := Trips.NewTripsController(db)
 	shortestpathCtrl := Shortestpath.NewShortestPathController(db)
+	routeCtrl := &GenTrip.RouteController{}
 
 	// Public routes (ไม่ต้องตรวจสอบ token)
 	r.POST("/signinuser", userCtrl.SignInUser)
@@ -54,7 +56,7 @@ func main() {
 
 	// Accommodation routes (ต้องล็อกอิน)
 	authorized.POST("/accommodations", accommodationCtrl.CreateAccommodation)
-	authorized.GET("/accommodations", accommodationCtrl.GetAll)
+	r.GET("/accommodations", accommodationCtrl.GetAll)
 	authorized.GET("/accommodations/:id", accommodationCtrl.GetByID)
 	authorized.PUT("/accommodations/:id", accommodationCtrl.Update)
 	authorized.DELETE("/accommodations/:id", accommodationCtrl.Delete)
@@ -68,14 +70,14 @@ func main() {
 
 	// Landmark routes
 	authorized.POST("/landmarks", landmarkCtrl.CreateLandmark)
-	authorized.GET("/landmarks", landmarkCtrl.GetAllLandmarks)
+	r.GET("/landmarks", landmarkCtrl.GetAllLandmarks)
 	authorized.GET("/landmarks/:id", landmarkCtrl.GetLandmarkByID)
 	authorized.PUT("/landmarks/:id", landmarkCtrl.UpdateLandmark)
 	authorized.DELETE("/landmarks/:id", landmarkCtrl.DeleteLandmark)
 
 	// Restaurant routes
 	authorized.POST("/restaurants", restaurantCtrl.CreateRestaurant)
-	authorized.GET("/restaurants", restaurantCtrl.GetAllRestaurants)
+	r.GET("/restaurants", restaurantCtrl.GetAllRestaurants)
 	authorized.GET("/restaurants/:id", restaurantCtrl.GetRestaurantByID)
 	authorized.PUT("/restaurants/:id", restaurantCtrl.UpdateRestaurant)
 	authorized.DELETE("/restaurants/:id", restaurantCtrl.DeleteRestaurant)
@@ -100,6 +102,8 @@ func main() {
 	authorized.GET("/shortest-paths/:id", shortestpathCtrl.GetShortestPathByID)
 	authorized.PUT("/shortest-paths/:id", shortestpathCtrl.UpdateShortestPath)
 	authorized.DELETE("/shortest-paths/:id", shortestpathCtrl.DeleteShortestPath)
+
+    r.GET("/gen-route", routeCtrl.GenerateRoute)
 
 	// Run server
 	r.Run(":8080")
