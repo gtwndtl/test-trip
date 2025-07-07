@@ -36,8 +36,9 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) translateY(-200px); /* ขยับขึ้น 50px */
+  transform: translate(-50%, -50%) translateY(-200px);
   z-index: 2;
+
   display: flex;
   justify-content: center;
   align-items: center;
@@ -46,6 +47,7 @@
   color: white;
   padding: 2rem;
 }
+
 
 
 .overlay h1 {

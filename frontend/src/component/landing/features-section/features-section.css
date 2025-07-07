@@ -1,50 +1,112 @@
 .features-container {
-  width: 100vw;
-  height: 35vh;
+  padding: 40px 20px 60px;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 .features-section {
-  width: 100%;
-  height: 100%;
   display: flex;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
   flex-wrap: wrap;
   justify-content: center;
   gap: 20px;
 }
 
-.features-section .ant-card {
+/* Wrapper เพื่อกำหนดอัตราส่วนจัตุรัส และจัด card ให้อยู่กลาง */
+.motion-wrapper {
   flex: 1 1 calc(33.333% - 40px);
-  /* 3 cards per row with gap */
   max-width: 400px;
-  min-width: 300px;
+  min-width: 280px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  justify-content: center;  /* ✅ แนวนอน */
+  align-items: center;      /* ✅ แนวตั้ง */
+  margin: 0 auto;           /* ✅ จัดกลางบนมือถือ */
 }
 
-.features-section .ant-card {
+/* Card Styling (ไม่มีเงา ไม่มีกรอบ ทุกอย่างอยู่ตรงกลาง) */
+.feature-card {
   width: 100%;
+  height: 100%;
+  background-color: #fff;
+  border-radius: 12px;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;   /* ✅ เนื้อหาอยู่กลางแนวตั้ง */
+  align-items: center;       /* ✅ เนื้อหาอยู่กลางแนวนอน */
+  padding: 0;
+  transition: transform 0.3s ease;
 }
 
-.ant-card {
-  border-radius: 8px;
-  border-style: hidden;
+.feature-card:hover {
+  transform: translateY(-3px);
+}
+
+.ant-card-body {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0;
 }
 
 .ant-card-body p {
   font-size: 16px;
   color: #858585;
-}
-
-.ant-card-body {
-  align-items: center;
-  text-align: center;
+  margin-top: 8px;
 }
 
 .feature-icon {
-  font-size: 100px;
+  font-size: 80px;
   margin-bottom: 16px;
   color: #545f71;
-  /* เปลี่ยนสีตามธีมได้ */
+}
+
+/* ✅ Responsive layout */
+@media (max-width: 1024px) {
+  .motion-wrapper {
+    flex: 1 1 calc(50% - 40px);
+  }
+
+  .feature-icon {
+    font-size: 72px;
+  }
+}
+
+@media (max-width: 768px) {
+  .motion-wrapper {
+    flex: 1 1 100%;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+
+  .feature-icon {
+    font-size: 64px;
+  }
+
+  .ant-card-body p {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .motion-wrapper {
+    max-width: 320px;
+  }
+
+  .features-container {
+    padding: 30px 12px;
+  }
+
+  .feature-icon {
+    font-size: 56px;
+  }
+
+  .ant-card-body p {
+    font-size: 14px;
+  }
 }
