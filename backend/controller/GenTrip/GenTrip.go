@@ -1,84 +1,87 @@
 package GenTrip
 
 import (
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "net/http"
-    "os/exec"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os/exec"
+	"strconv"
 
-    "github.com/gin-gonic/gin"
-    "gorm.io/gorm"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type RouteController struct {
-    DB *gorm.DB
+	DB *gorm.DB
 }
 
 type PythonResult struct {
-    RouteDescription string `json:"route_description"`
-    Paths            []struct {
-        From       string  `json:"from"`
-        FromName   string  `json:"from_name"`
-        To         string  `json:"to"`
-        ToName     string  `json:"to_name"`
-        DistanceKm float64 `json:"distance_km"`
-    } `json:"paths"`
-    TotalDistanceKm float64 `json:"total_distance_km"`
-    ElapsedSeconds  float64 `json:"elapsed_seconds"`
-    Message         string  `json:"message"`
-    Error           string  `json:"error,omitempty"`
+	Start     string `json:"start"`
+	StartName string `json:"start_name"`
+	Paths     []struct {
+		From       string  `json:"from"`
+		FromName   string  `json:"from_name"`
+		To         string  `json:"to"`
+		ToName     string  `json:"to_name"`
+		DistanceKm float64 `json:"distance_km"`
+	} `json:"paths"`
+	TotalDistanceKm float64 `json:"total_distance_km"`
+	Message         string  `json:"message"`
+	Error           string  `json:"error,omitempty"`
 }
 
 func (rc *RouteController) GenerateRoute(c *gin.Context) {
-    startNode := c.Query("start")
-    if startNode == "" {
-        var req struct {
-            Start string `json:"start"`
-        }
-        if err := c.ShouldBindJSON(&req); err != nil || req.Start == "" {
-            c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาระบุ start ผ่าน query param หรือ JSON body"})
-            return
-        }
-        startNode = req.Start
-    }
+	startNode := c.Query("start")
+	daysStr := c.Query("days")
 
-    cmd := exec.Command(
-        "python",
-        "Code.py",
-        startNode,
-    )
+	if startNode == "" || daysStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาระบุ start และ days ผ่าน query parameters"})
+		return
+	}
 
-    var stderr bytes.Buffer
-    cmd.Stderr = &stderr
+	days, err := strconv.Atoi(daysStr)
+	if err != nil || days <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "days ต้องเป็นจำนวนเต็มบวก"})
+		return
+	}
 
-    var outBuf, errBuf bytes.Buffer
-    cmd.Stdout = &outBuf
-    cmd.Stderr = &errBuf
+	cmd := exec.Command(
+		"python",
+		"Code.py", // ชื่อไฟล์ Python script ของคุณ
+		startNode,
+		daysStr,
+	)
 
-    err := cmd.Run()  // ใช้ Run แทน Output เพราะเราจัด stdout/stderr เอง
-    output := outBuf.Bytes()
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{
-            "error": fmt.Sprintf("รัน Python script ไม่ได้: %s, stderr: %s, stdout: %s", err.Error(), errBuf.String(), outBuf.String()),
-        })
-        return
-    }
+	var outBuf, errBuf bytes.Buffer
+	cmd.Stdout = &outBuf
+	cmd.Stderr = &errBuf
 
+	err = cmd.Run()
+	output := outBuf.Bytes()
 
-    var result PythonResult
-    if err := json.Unmarshal(output, &result); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{
-            "error": fmt.Sprintf("แปลงผลลัพธ์จาก Python ไม่ได้: %s, output: %s", err.Error(), string(output)),
-        })
-        return
-    }
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("รัน Python script ไม่ได้: %s, stderr: %s, stdout: %s", err.Error(), errBuf.String(), outBuf.String()),
+		})
+		return
+	}
 
-    if result.Error != "" {
-        c.JSON(http.StatusBadRequest, gin.H{"error": result.Error})
-        return
-    }
+	var result PythonResult
+	if err := json.Unmarshal(output, &result); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("แปลงผลลัพธ์จาก Python ไม่ได้: %s, output: %s", err.Error(), string(output)),
+		})
+		return
+	}
 
-    c.JSON(http.StatusOK, result)
+	if result.Error != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": result.Error})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }
