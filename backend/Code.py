@@ -1,196 +1,186 @@
-import pandas as pd
-import math
-import heapq
 import sys
-import time
 import json
-from collections import defaultdict, deque
 import requests
+import math
+from collections import defaultdict
+import io
 
-if sys.version_info >= (3, 7):
-    sys.stdout.reconfigure(encoding='utf-8')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def haversine(lat1, lon1, lat2, lon2):
-    R = 6371
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlambda = math.radians(lon2 - lon1)
-    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
-    return 2 * R * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    R = 6371  # km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1))*math.cos(math.radians(lat2))*math.sin(dlon/2)**2
+    return 2 * R * math.asin(math.sqrt(a))
 
-start_time = time.time()
+def load_data(url, prefix):
+    data = requests.get(url).json()
+    for item in data:
+        item['id'] = f"{prefix}{item['ID']}"
+    return data
 
-try:
-    # รับ start node จาก argument
-    if len(sys.argv) < 2:
-        print(json.dumps({"error": "กรุณาระบุรหัสเริ่มต้น (start_node)"}))
-        sys.exit(1)
-    start_node = sys.argv[1].strip()
+def build_graph(places):
+    graph = defaultdict(list)
+    for i in range(len(places)):
+        for j in range(i+1, len(places)):
+            a = places[i]
+            b = places[j]
+            dist = haversine(float(a['Lat']), float(a['Lon']), float(b['Lat']), float(b['Lon']))
+            graph[a['id']].append((b['id'], dist))
+            graph[b['id']].append((a['id'], dist))
+    return graph
 
-    # โหลดข้อมูลจาก API
-    def load_data_from_api(url):
-        resp = requests.get(url)
-        resp.raise_for_status()
-        return resp.json()
+def find_nearest(current_id, candidates, graph):
+    nearest = None
+    min_dist = float('inf')
+    for c in candidates:
+        # หา dist จาก current_id ไป c
+        dist = next((d for n,d in graph[current_id] if n == c), float('inf'))
+        if dist < min_dist:
+            min_dist = dist
+            nearest = c
+    return nearest
 
-    places_data = load_data_from_api('http://localhost:8080/accommodations')
-    landmarks_data = load_data_from_api('http://localhost:8080/landmarks')
-    restaurants_data = load_data_from_api('http://localhost:8080/restaurants')
+def average_distance(center_id, nodes, graph):
+    total = 0
+    count = 0
+    for node in nodes:
+        dist = next((d for n,d in graph[center_id] if n == node), None)
+        if dist is not None:
+            total += dist
+            count += 1
+    return total / count if count > 0 else float('inf')
 
-    def convert_to_df(data_list, prefix):
-        df = pd.DataFrame(data_list)
-        df = df.copy()
-        df['id'] = [f"{prefix}{i}" for i in range(len(df))]
-        return df
+def plan_trip(start_id, days, landmarks, accommodations, restaurants, points_per_day=4):
+    p_list = [p['id'] for p in landmarks if p['id'] != start_id]
+    r_list = [r['id'] for r in restaurants]
+    a_list = [a['id'] for a in accommodations]
 
-    places_df = convert_to_df(places_data, 'P')
-    attractions_df = convert_to_df(landmarks_data, 'A')
-    restaurants_df = convert_to_df(restaurants_data, 'R')
+    all_places = landmarks + accommodations + restaurants
+    place_lookup = {p['id']: p for p in all_places}
 
-    all_places = pd.concat([places_df, attractions_df, restaurants_df], ignore_index=True)
+    graph = build_graph(all_places)
 
-    location_dict = {row['id']: (row['Lat'], row['Lon']) for _, row in all_places.iterrows()}
-    name_dict = {row['id']: row['Name'] for _, row in all_places.iterrows()}
+    remaining = set(p_list)
 
-    if start_node not in location_dict:
-        print(json.dumps({"error": f"ไม่พบ node '{start_node}' ในข้อมูล!"}))
-        sys.exit(1)
+    trip_days = []
+    all_trip_points = [start_id]  # เก็บสถานที่เที่ยว + ร้านอาหาร ทุกวันรวมกัน
 
-    # สร้างกราฟ (undirected)
-    graph = {node: [] for node in location_dict}
-    max_distance = 30
-    for id1, (lat1, lon1) in location_dict.items():
-        for id2, (lat2, lon2) in location_dict.items():
-            if id1 < id2:
-                distance = haversine(lat1, lon1, lat2, lon2)
-                if distance <= max_distance:
-                    graph[id1].append((id2, distance))
-                    graph[id2].append((id1, distance))
-
-    # Dijkstra หาเส้นทางที่สั้นสุดจาก start
-    def dijkstra(graph, start):
-        distances = {node: float('inf') for node in graph}
-        distances[start] = 0
-        queue = [(0, start)]
-        while queue:
-            current_distance, current_node = heapq.heappop(queue)
-            if current_distance > distances[current_node]:
-                continue
-            for neighbor, weight in graph[current_node]:
-                distance = current_distance + weight
-                if distance < distances[neighbor]:
-                    distances[neighbor] = distance
-                    heapq.heappush(queue, (distance, neighbor))
-        return distances
-
-    distances = dijkstra(graph, start_node)
-
-    # หาจุด attraction และ restaurant ที่ใกล้ที่สุด
-    closest_attraction = min(
-        [(id_, dist) for id_, dist in distances.items() if id_ in set(attractions_df['id'])],
-        key=lambda x: x[1]
-    )
-    closest_restaurant = min(
-        [(id_, dist) for id_, dist in distances.items() if id_ in set(restaurants_df['id'])],
-        key=lambda x: x[1]
-    )
-
-    # สร้าง MST (Prim's Algorithm)
-    def prim_mst(graph, start):
-        visited = set([start])
-        edges = [(weight, start, neighbor) for neighbor, weight in graph[start]]
-        heapq.heapify(edges)
-        mst = []
-        while edges:
-            weight, frm, to = heapq.heappop(edges)
-            if to not in visited:
-                visited.add(to)
-                mst.append((frm, to, weight))
-                for neighbor, w in graph[to]:
-                    if neighbor not in visited:
-                        heapq.heappush(edges, (w, to, neighbor))
-        return mst
-
-    mst = prim_mst(graph, start_node)
-
-    # สร้าง adjacency list ของ MST
-    mst_adj = defaultdict(list)
-    for u, v, w in mst:
-        mst_adj[u].append((v, w))
-        mst_adj[v].append((u, w))
-
-    # BFS หา path เป็น edges จาก start ถึง goal
-    def bfs_path(graph, start, goal):
-        queue = deque([(start, [start])])
-        visited = set()
-        while queue:
-            current, path = queue.popleft()
-            if current == goal:
-                edges = []
-                for i in range(len(path) - 1):
-                    frm = path[i]
-                    to = path[i + 1]
-                    w = next(w for n, w in graph[frm] if n == to)
-                    edges.append((frm, to, w))
-                return edges
-            if current in visited:
-                continue
-            visited.add(current)
-            for neighbor, weight in graph[current]:
-                if neighbor not in visited:
-                    queue.append((neighbor, path + [neighbor]))
-        return []
-
-    path_to_attraction = bfs_path(mst_adj, start_node, closest_attraction[0])
-    path_to_restaurant = bfs_path(mst_adj, closest_attraction[0], closest_restaurant[0])
-
-    # รวมเส้นทาง
-    if path_to_attraction and path_to_restaurant:
-        if path_to_attraction[-1][1] == path_to_restaurant[0][0]:
-            combined_path = path_to_attraction + path_to_restaurant
+    for day in range(days):
+        day_plan = []
+        if day == 0:
+            current = start_id
+            day_plan.append(current)
         else:
-            combined_path = path_to_attraction + path_to_restaurant
+            if trip_days:
+                current = trip_days[-1]['plan'][-1]
+                day_plan.append(current)
+            else:
+                current = start_id
+                day_plan.append(current)
+
+        while len(day_plan) < points_per_day:
+            nearest = find_nearest(current, remaining, graph)
+            if nearest is None:
+                break
+            day_plan.append(nearest)
+            remaining.remove(nearest)
+            current = nearest
+
+        # แทรกร้านอาหารตามตำแหน่ง
+        r_points = []
+        if len(day_plan) >= 2 and r_list:
+            last_p = day_plan[1]
+            nearest_r = find_nearest(last_p, r_list, graph)
+            if nearest_r:
+                r_points.append((2, nearest_r))
+        if len(day_plan) >= 4 and r_list:
+            last_p = day_plan[3]
+            nearest_r = find_nearest(last_p, r_list, graph)
+            if nearest_r:
+                r_points.append((4 + len(r_points), nearest_r))
+
+        for idx, r_id in r_points:
+            day_plan.insert(idx, r_id)
+
+        trip_days.append({
+            "day": day + 1,
+            "plan": day_plan,
+        })
+
+        # รวมสถานที่เที่ยวและร้านอาหารทั้งหมดในทริป
+        for p in day_plan:
+            if p not in all_trip_points:
+                all_trip_points.append(p)
+
+        if not remaining:
+            break
+
+    # เลือกที่พักเพียงจุดเดียวสำหรับทั้งทริป (ศูนย์กลางของ all_trip_points)
+    if a_list and all_trip_points:
+        center_a = min(a_list, key=lambda a: average_distance(a, all_trip_points, graph))
+        accommodation_info = place_lookup[center_a]
     else:
-        combined_path = path_to_attraction + path_to_restaurant
+        center_a = None
+        accommodation_info = None
 
-    # ฟังก์ชันกรอง edge ซ้ำย้อนกลับ (A->B กับ B->A)
-    def remove_reverse_duplicates(edges):
-        seen = set()
-        filtered = []
-        for frm, to, dist in edges:
-            if (to, frm) not in seen:
-                filtered.append((frm, to, dist))
-                seen.add((frm, to))
-        return filtered
+    # กำหนดที่พักเดียวกันในทุกวัน
+    for day_info in trip_days:
+        day_info["accommodation"] = center_a
+        day_info["accommodation_name"] = accommodation_info["Name"] if accommodation_info else None
+        day_info["accommodation_location"] = {
+            "lat": accommodation_info["Lat"],
+            "lon": accommodation_info["Lon"]
+        } if accommodation_info else None
 
-    filtered_path = remove_reverse_duplicates(combined_path)
+    detailed_routes = []
+    total_distance = 0.0
 
-    # กรอง edge ที่ระยะเกิน 2 กม.
-    filtered_path = [e for e in filtered_path if e[2] <= 2.0]
+    for day_info in trip_days:
+        day_plan = day_info["plan"][:]
+        if day_info["accommodation"]:
+            day_plan.append(day_info["accommodation"])
 
-    total_dist = sum(edge[2] for edge in filtered_path)
-
-    result = {
-        "route_description": f"เส้นทางจาก {start_node} → {closest_attraction[0]} → {closest_restaurant[0]} ที่ระยะไม่เกิน 2 km",
-        "paths": [
-            {
+        for i in range(len(day_plan) - 1):
+            frm = day_plan[i]
+            to = day_plan[i+1]
+            dist = next((d for n,d in graph[frm] if n == to), 0)
+            total_distance += dist
+            detailed_routes.append({
                 "from": frm,
-                "from_name": name_dict.get(frm, ""),
+                "from_name": place_lookup[frm]["Name"],
                 "to": to,
-                "to_name": name_dict.get(to, ""),
-                "distance_km": dist
-            }
-            for frm, to, dist in filtered_path
-        ],
-        "total_distance_km": total_dist,
-        "elapsed_seconds": round(time.time() - start_time, 2),
-        "message": "สำเร็จ"
+                "to_name": place_lookup[to]["Name"],
+                "distance_km": round(dist, 2),
+                "day": day_info["day"]
+            })
+
+    return {
+        "start": start_id,
+        "start_name": place_lookup[start_id]["Name"],
+        "days": days,
+        "trip_plan": trip_days,
+        "paths": detailed_routes,
+        "total_distance_km": round(total_distance, 2),
+        "message": "สร้างเส้นทางสำเร็จ"
     }
 
+
+def main():
+    if len(sys.argv) < 3:
+        print(json.dumps({"error": "กรุณาระบุ start_id และ days"}))
+        sys.exit(1)
+
+    start_id = sys.argv[1]
+    days = int(sys.argv[2])
+
+    landmarks = load_data("http://localhost:8080/landmarks", "P")
+    accommodations = load_data("http://localhost:8080/accommodations", "A")
+    restaurants = load_data("http://localhost:8080/restaurants", "R")
+
+    result = plan_trip(start_id, days, landmarks, accommodations, restaurants)
     print(json.dumps(result, ensure_ascii=False))
 
-except Exception as e:
-    print(json.dumps({
-        "error": str(e)
-    }))
-    sys.exit(1)
+if __name__ == "__main__":
+    main()
