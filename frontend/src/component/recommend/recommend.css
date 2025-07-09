@@ -1,8 +1,9 @@
-.chat-page-recommend{
+.chat-page-recommend {
   display: flex;
   flex-direction: column;
   width: 100%;
   padding: 16px;
   box-sizing: border-box;
   background-color: #ffdcdc;
+  border-radius: 16px;
 }

@@ -4,11 +4,12 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 100vh;
+  min-height: 100%;
   box-sizing: border-box;
   background-color: white;
+  scrollbar-width: none;
+  overflow: scroll;
 }
-
 
 .head-container {
   position: fixed;
@@ -19,19 +20,7 @@
   transition: all 0.3s ease;
 }
 
-
-
-/* สำหรับ Chrome, Safari, Edge */
-body::-webkit-scrollbar {
+/* ซ่อน scrollbar ทุกที่แต่ยังเลื่อนได้ */
+::-webkit-scrollbar {
   display: none;
-}
-
-/* สำหรับ Firefox */
-body {
-  scrollbar-width: none;
-}
-
-/* ให้ยัง scroll ได้อยู่ */
-body {
-  overflow-y: scroll;
 }

@@ -3,5 +3,16 @@
   flex-direction: column;
   align-items: center;
   gap: 20px;
+  position: relative; /* ✅ ต้องมี */
+}
 
+.hero-section {
+  position: relative;
+  z-index: 1;
+}
+
+.features-section {
+  position: relative;
+  top: -100px;
+  z-index: 10;
 }

@@ -1,6 +1,7 @@
 import './chat.css';
 import { Input, Button } from 'antd';
 import { useState, useRef, useEffect } from 'react';
+import doraemon from '../../assets/doraemon.jpg';
 
 const Chat = () => {
   const [chatInput, setChatInput] = useState('');
@@ -12,7 +13,7 @@ const Chat = () => {
       setMessages(prev => [
         ...prev,
         { text: chatInput.trim(), sender: 'user' },
-        { text: 'This is a bot response.', sender: 'bot' },
+        { text: 'นี่คือตัวอย่างคำตอบจากระบบอัตโนมัติ', sender: 'bot' },
       ]);
       setChatInput('');
     }
@@ -26,6 +27,17 @@ const Chat = () => {
   };
 
   useEffect(() => {
+    // ข้อความเริ่มต้นจากบอท
+    setMessages([
+      {
+        text:
+          'สวัสดีครับ ผมคือ DoraPlanner ผู้ช่วยวางแผนการเดินทางส่วนตัวของคุณ กรุณาบอกจุดหมายที่คุณต้องการไป แล้วผมจะช่วยจัดทริปที่เหมาะกับคุณที่สุด',
+        sender: 'bot',
+      },
+    ]);
+  }, []);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -37,18 +49,22 @@ const Chat = () => {
       </div>
 
       <div className="chat-messages">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`chat-message ${msg.sender === 'user' ? 'user-message' : 'bot-message'}`}
-          >
-            {msg.text}
-          </div>
-        ))}
+        {messages.map((msg, index) =>
+          msg.sender === 'bot' ? (
+            <div key={index} className="bot-message-wrapper">
+              <img src={doraemon} alt="Bot Avatar" className="bot-avatar" />
+              <div className="chat-message bot-message">{msg.text}</div>
+            </div>
+          ) : (
+            <div key={index} className="chat-message user-message">
+              {msg.text}
+            </div>
+          )
+        )}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="chat-input" style={{ display: 'flex', gap: 8 }}>
+      <div className="chat-input">
         <Input
           placeholder="Ask anything..."
           value={chatInput}

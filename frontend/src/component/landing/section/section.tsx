@@ -1,13 +1,27 @@
-import { motion } from 'framer-motion';
-import firstPicture from '../../../assets/landing/1.jpg';
+
 import secondPicture from '../../../assets/landing/2.jpg';
 import thirdPicture from '../../../assets/landing/3.jpg';
 import './section.css';
+import ChatSimulation from '../chat-simulation/chat-simulation';
+
+import { motion, useInView } from 'framer-motion';
+import { useRef, useState, useEffect } from 'react';
+import ChatProcessSimulation from '../chat-process-simulation/chat-process-simulation';
 
 const Section = () => {
+    const chatRef = useRef(null);
+    const isInView = useInView(chatRef, { once: true, margin: '0px 0px -100px 0px' }); // ช้าเล็กน้อยตอนขึ้น
+    const [shouldRenderChat, setShouldRenderChat] = useState(false);
+
+    useEffect(() => {
+        if (isInView) {
+            setShouldRenderChat(true);
+        }
+    }, [isInView]);
+
     return (
         <div className="section">
-            {/* Step 1 - from right-bottom */}
+            {/* Step 1 */}
             <div className="section-step">
                 <div className="section-step-left">
                     <motion.div
@@ -30,17 +44,19 @@ const Section = () => {
                         01
                     </motion.h1>
                 </div>
-                <picture className="section-step-image">
-                    <motion.img
-                        src={firstPicture}
-                        alt="destination step"
-                        initial={{ opacity: 0, x: 100, y: 100 }}
-                        whileInView={{ opacity: 1, x: 0, y: 0 }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                        viewport={{ once: true, amount: 0.3 }}
-                    />
-                </picture>
+
+                <motion.div
+                    className="section-step-chat"
+                    initial={{ opacity: 0, x: 100, y: 100 }}
+                    whileInView={{ opacity: 1, x: 0, y: 0 }}
+                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                    viewport={{ once: true, amount: 0.3 }}
+                    ref={chatRef}
+                >
+                    {shouldRenderChat && <ChatSimulation />}
+                </motion.div>
             </div>
+
 
             {/* Step 2 - from left-bottom */}
             <div className="section-step reverse">
@@ -65,16 +81,16 @@ const Section = () => {
                         02
                     </motion.h1>
                 </div>
-                <picture className="section-step-image">
-                    <motion.img
-                        src={secondPicture}
-                        alt="system planning step"
-                        initial={{ opacity: 0, x: -100, y: 100 }}
-                        whileInView={{ opacity: 1, x: 0, y: 0 }}
-                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
-                        viewport={{ once: true, amount: 0.3 }}
-                    />
-                </picture>
+                <motion.div
+                    className="section-step-chat"
+                    initial={{ opacity: 0, x: -100, y: 100 }}
+                    whileInView={{ opacity: 1, x: 0, y: 0 }}
+                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+                    viewport={{ once: true, amount: 0.3 }}
+                >
+                    <ChatProcessSimulation />
+                </motion.div>
+
             </div>
 
             {/* Step 3 - from right-bottom */}
