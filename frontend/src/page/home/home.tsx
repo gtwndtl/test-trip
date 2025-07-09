@@ -1,4 +1,4 @@
-import Footer from "../../component/footer/footer";
+import Footer from "../../component/landing/footer/footer";
 import "./home.css";
 import LandingPage from "../../component/landing/landing";
 import Head from "../../navbar/head";
