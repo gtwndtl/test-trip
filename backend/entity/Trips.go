@@ -13,6 +13,17 @@ type Trips struct {
 	Types string 
 	Day time.Time 
 
+	TripList []string `gorm:"type:text[]"`
+
+	Tripone string
+	Triptwo string
+	Tripthree string
+	Tripfour string
+	Tripfive string
+	Tripsix string
+	Tripseven string
+	Tripeight string
+
 	Con_id  uint      
    	Con    *Condition  `gorm:"foreignKey:Con_id"`
 
