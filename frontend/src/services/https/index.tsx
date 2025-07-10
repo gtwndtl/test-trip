@@ -8,6 +8,7 @@ import type { LandmarkInterface } from "../../interfaces/Landmark";
 import type { RestaurantInterface } from "../../interfaces/Restaurant";
 import type { UserInterface } from "../../interfaces/User";
 import type { SignInInterface } from "../../interfaces/SignIn";
+import type { GroqResponse} from "../../interfaces/Groq";
 
 const apiUrl = "http://localhost:8080";
 const Authorization = localStorage.getItem("token");
@@ -365,6 +366,37 @@ async function SignInUser(signInData: SignInInterface): Promise<{ token: string;
     }
 }
 
+// Async function สำหรับเรียกเส้นทางทริป
+async function GetRouteFromAPI(startId: number, days: number) {
+  try {
+    const response = await axios.get(
+      `http://localhost:8080/gen-route?start=P${startId}&days=${days}`
+    );
+    return response.data; // ส่งคืนข้อมูลที่ frontend ต้องใช้
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดขณะเรียก API เส้นทาง:', error);
+    throw error; // ส่ง error กลับไปให้ component ไปจัดการ
+  }
+}
+
+async function PostGroq(prompt: string): Promise<GroqResponse> {
+  try {
+    const response = await axios.post<GroqResponse>(
+      `${apiUrl}/api/groq`,
+      { prompt },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+
 
 export {
     SignInUser,
@@ -402,5 +434,7 @@ export {
     GetUserById,
     CreateUser,
     UpdateUser,
-    DeleteUser
+    DeleteUser, 
+    GetRouteFromAPI,
+    PostGroq,
 }

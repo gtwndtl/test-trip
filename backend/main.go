@@ -15,6 +15,7 @@ import (
 	"github.com/gtwndtl/trip-spark-builder/controller/Trips"
 	"github.com/gtwndtl/trip-spark-builder/controller/User"
 	"github.com/gtwndtl/trip-spark-builder/controller/GenTrip"
+		"github.com/gtwndtl/trip-spark-builder/controller/GroqApi"
 	"github.com/gtwndtl/trip-spark-builder/middlewares"
 )
 
@@ -104,6 +105,7 @@ func main() {
 	authorized.DELETE("/shortest-paths/:id", shortestpathCtrl.DeleteShortestPath)
 
     r.GET("/gen-route", routeCtrl.GenerateRoute)
+	r.POST("/api/groq", GroqApi.PostGroq)
 
 	// Run server
 	r.Run(":8080")

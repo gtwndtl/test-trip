@@ -1,10 +1,9 @@
 import './chat.css';
 import { Input, Button } from 'antd';
 import { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
 import doraemon from '../../assets/doraemon.jpg';
 import type { LandmarkInterface } from '../../interfaces/Landmark';
-import { GetAllLandmarks } from '../../services/https';
+import { GetAllLandmarks, GetRouteFromAPI, PostGroq } from '../../services/https';
 
 const Chat = () => {
   const [chatInput, setChatInput] = useState('');
@@ -49,49 +48,33 @@ const Chat = () => {
       setLoading(true);
       setMessages(prev => [...prev, { text: `กำลังสร้างแผนทริปสำหรับ "${keyword}"...`, sender: 'bot' }]);
 
-      const res = await axios.get(`http://localhost:8080/gen-route?start=P${id}&days=${days}`);
-      const routeData = res.data;
+      const routeData = await GetRouteFromAPI(id, days);
 
       const prompt = `
-      คุณคือผู้ช่วยวางแผนทัวร์ที่เชี่ยวชาญ
+คุณคือผู้ช่วยวางแผนทัวร์ที่เชี่ยวชาญ
 
-      ข้อมูลเส้นทางนี้เริ่มจาก "${keyword}" มีจำนวนวัน ${days} วัน
+ข้อมูลเส้นทางนี้เริ่มจาก "${keyword}" มีจำนวนวัน ${days} วัน
 
-      โปรดช่วยจัดแผนทริปให้อ่านง่ายและสนุก เหมือนเล่าให้เพื่อนฟัง โดย:
+โปรดช่วยจัดแผนทริปให้อ่านง่ายและสนุก เหมือนเล่าให้เพื่อนฟัง โดย:
 
-      - แบ่งแผนเป็นแต่ละวัน (เช่น วันแรก, วันที่สอง, ...)
-      - แต่ละวันบอกลำดับสถานที่ที่ไป พร้อมคำอธิบายสั้นๆ ว่าควรทำอะไรที่นั่น เช่น ชมวิว, ทานอาหาร, พักผ่อน
-      - เขียนเป็นข้อความธรรมชาติ ไม่ต้องเป็นตาราง หรือแสดงรหัสสถานที่ เช่น Pxxx, Rxxx
-      - สรุประยะทางคร่าวๆ ของแต่ละวันให้ท้ายข้อความ
+- แบ่งแผนเป็นแต่ละวัน (เช่น วันแรก, วันที่สอง, ...)
+- แต่ละวันบอกลำดับสถานที่ที่ไป พร้อมคำอธิบายสั้นๆ ว่าควรทำอะไรที่นั่น เช่น ชมวิว, ทานอาหาร, พักผ่อน
+- เขียนเป็นข้อความธรรมชาติ ไม่ต้องเป็นตาราง หรือแสดงรหัสสถานที่ เช่น Pxxx, Rxxx
+- สรุประยะทางคร่าวๆ ของแต่ละวันให้ท้ายข้อความ
 
-      ข้อมูลเส้นทาง (paths) ดังนี้:
-      ${JSON.stringify(routeData.paths, null, 2)}
+ข้อมูลเส้นทาง (paths) ดังนี้:
+${JSON.stringify(routeData.paths, null, 2)}
 
-      ช่วยจัดแผนท่องเที่ยวตามข้อมูลนี้ให้ด้วยค่ะ
+ช่วยจัดแผนท่องเที่ยวตามข้อมูลนี้ให้ด้วยค่ะ
       `;
 
+      const groqRes = await PostGroq(prompt);
+      const tripPlan = groqRes?.choices?.[0]?.message?.content?.trim();
 
+      if (!tripPlan) {
+        throw new Error("Groq ไม่ได้ตอบกลับข้อความที่ต้องการ");
+      }
 
-      const groqApiKey = import.meta.env.VITE_REACT_APP_GROQ_API_KEY;
-      const groqRes = await axios.post(
-        'https://api.groq.com/openai/v1/chat/completions',
-        {
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-          messages: [
-            { role: 'system', content: 'You are a helpful travel assistant.' },
-            { role: 'user', content: prompt },
-          ],
-          temperature: 0.7,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${groqApiKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const tripPlan = groqRes.data.choices[0].message.content.trim();
       setMessages(prev => [...prev, { text: tripPlan, sender: 'bot', isTripPlan: true }]);
     } catch (error) {
       console.error('Error generating route or calling Groq', error);
