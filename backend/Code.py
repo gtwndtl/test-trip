@@ -51,8 +51,19 @@ def average_distance(center_id, nodes, graph):
             count += 1
     return total / count if count > 0 else float('inf')
 
+def get_nearest_points(current_id, candidates, n, graph):
+    selected = []
+    cands = candidates.copy()
+    for _ in range(n):
+        nearest = find_nearest(current_id, cands, graph)
+        if nearest is None:
+            break
+        selected.append(nearest)
+        cands.remove(nearest)
+        current_id = nearest
+    return selected
+
 def plan_trip(start_id, days, landmarks, accommodations, restaurants):
-    # สร้างลิสต์จุด P, R, A
     p_list = [p['id'] for p in landmarks if p['id'] != start_id]
     r_list = [r['id'] for r in restaurants]
     a_list = [a['id'] for a in accommodations]
@@ -66,93 +77,86 @@ def plan_trip(start_id, days, landmarks, accommodations, restaurants):
     remaining_r = set(r_list)
 
     trip_days = []
+    all_selected_p = set([start_id])  # เก็บ P ที่เลือกทั้งหมด
 
-    # เลือกที่พักศูนย์กลางจากจุด P ทั้งหมด (รวม start_id + p_list)
-    all_p_for_accommodation = [start_id] + list(p_list)
-    accommodation_id = None
-    accommodation_info = None
-    if a_list and all_p_for_accommodation:
-        accommodation_id = min(a_list, key=lambda a: average_distance(a, all_p_for_accommodation, graph))
-        accommodation_info = place_lookup[accommodation_id]
-
-    current_start = start_id  # จุดเริ่มต้นวันแรก
+    current_start = start_id
 
     for day in range(days):
         day_plan = []
+        if current_start is None:
+            break
 
-        # เริ่มวันด้วย current_start เป็น P 1 จุดแรก
-        day_plan.append(current_start)
+        day_plan.append(current_start)  # เริ่มวันด้วย current_start
 
-        def get_nearest_points(current_id, candidates, n):
-            selected = []
-            cands = candidates.copy()
-            for _ in range(n):
-                nearest = find_nearest(current_id, cands, graph)
-                if nearest is None:
-                    break
-                selected.append(nearest)
-                cands.remove(nearest)
-                current_id = nearest
-            return selected
+        # P 1 จุด
+        next_p1 = get_nearest_points(day_plan[-1], remaining_p, 1, graph)
+        if next_p1:
+            day_plan.extend(next_p1)
+            for p in next_p1:
+                remaining_p.discard(p)
+                all_selected_p.add(p)
 
-        # เลือก P อีก 1 จุด เพื่อรวมเป็น 2 จุด P แรกของวัน
-        need_p1 = 1
-        two_p1 = get_nearest_points(day_plan[-1], remaining_p, need_p1)
-        day_plan.extend(two_p1)
-        for p in two_p1:
-            remaining_p.discard(p)
-
-        # เลือก R 1 จุด
+        # R 1 จุด
         if remaining_r:
             r1 = find_nearest(day_plan[-1], remaining_r, graph)
             if r1:
                 day_plan.append(r1)
                 remaining_r.discard(r1)
 
-        # เลือก P อีก 2 จุด
-        two_p2 = get_nearest_points(day_plan[-1], remaining_p, 2)
-        day_plan.extend(two_p2)
-        for p in two_p2:
-            remaining_p.discard(p)
+        # P 2 จุด
+        next_p2 = get_nearest_points(day_plan[-1], remaining_p, 2, graph)
+        if next_p2:
+            day_plan.extend(next_p2)
+            for p in next_p2:
+                remaining_p.discard(p)
+                all_selected_p.add(p)
 
-        # เลือก R อีก 1 จุด
+        # R 1 จุด
         if remaining_r:
             r2 = find_nearest(day_plan[-1], remaining_r, graph)
             if r2:
                 day_plan.append(r2)
                 remaining_r.discard(r2)
 
-        # เพิ่มที่พัก A 1 จุด (ศูนย์กลาง) ลงท้ายวัน
-        if accommodation_id:
-            day_plan.append(accommodation_id)
+        trip_days.append({"day": day + 1, "plan": day_plan})
 
-        trip_days.append({
-            "day": day + 1,
-            "plan": day_plan,
-            "accommodation": accommodation_id,
-            "accommodation_name": accommodation_info["Name"] if accommodation_info else None,
-            "accommodation_location": {
-                "lat": accommodation_info["Lat"],
-                "lon": accommodation_info["Lon"],
-            } if accommodation_info else None
-        })
+        # คำนวณที่พักจาก P ทั้งหมดที่เลือกในทริป
+        if a_list and all_selected_p:
+            accommodation_id = min(a_list, key=lambda a: average_distance(a, all_selected_p, graph))
+            accommodation_info = place_lookup[accommodation_id]
+        else:
+            accommodation_id = None
+            accommodation_info = None
 
-        # เริ่มวันถัดไปด้วยที่พักวันก่อนหน้า
-        current_start = accommodation_id if accommodation_id else day_plan[-1]
+        # ไม่เปลี่ยน current_start เป็น accommodation_id เพื่อไม่ให้ที่พักโผล่ใน plan ของวันถัดไป
+        # current_start = accommodation_id  # ลบบรรทัดนี้
 
-        # ถ้าไม่เหลือ P และ R ให้จบก่อนครบวัน
+        # ถ้า P กับ R หมดก่อนก็หยุด
         if not remaining_p and not remaining_r:
             break
 
-    # สร้างเส้นทางละเอียด และคำนวณระยะทางรวม
+    # อัพเดต accommodation ในทุกวัน (ที่พักเดียวตลอดทริป)
+    for day_info in trip_days:
+        day_info["accommodation"] = accommodation_id
+        day_info["accommodation_name"] = accommodation_info["Name"] if accommodation_info else None
+        day_info["accommodation_location"] = {
+            "lat": accommodation_info["Lat"],
+            "lon": accommodation_info["Lon"],
+        } if accommodation_info else None
+
+    # สร้าง detailed_routes โดยไม่รวมที่พักในเส้นทางเดิน
     detailed_routes = []
     total_distance = 0.0
-
     for day_info in trip_days:
         plan = day_info["plan"]
         for i in range(len(plan) - 1):
             frm = plan[i]
             to = plan[i + 1]
+
+            # ข้ามเส้นทางที่เริ่มหรือสิ้นสุดที่พัก (accommodation_id)
+            if frm == accommodation_id or to == accommodation_id:
+                continue
+
             dist = next((d for n, d in graph[frm] if n == to), 0)
             total_distance += dist
             detailed_routes.append({
@@ -171,8 +175,18 @@ def plan_trip(start_id, days, landmarks, accommodations, restaurants):
         "trip_plan": trip_days,
         "paths": detailed_routes,
         "total_distance_km": round(total_distance, 2),
-        "message": "สร้างเส้นทางสำเร็จ"
+        "message": "สร้างเส้นทางสำเร็จ",
+        "accommodation": {
+            "id": accommodation_id,
+            "name": accommodation_info["Name"] if accommodation_info else None,
+            "location": {
+                "lat": accommodation_info["Lat"] if accommodation_info else None,
+                "lon": accommodation_info["Lon"] if accommodation_info else None,
+            }
+        }
     }
+
+
 
 def main():
     if len(sys.argv) < 3:

@@ -17,19 +17,32 @@ type RouteController struct {
 }
 
 type PythonResult struct {
-	Start     string `json:"start"`
-	StartName string `json:"start_name"`
-	Paths     []struct {
+	Start           string `json:"start"`
+	StartName       string `json:"start_name"`
+	Days            int    `json:"days"` // ถ้ามีข้อมูลจำนวนวันส่งกลับมา
+	TripPlan        []struct {
+		Day               int      `json:"day"`
+		Plan              []string `json:"plan"`
+		Accommodation     string   `json:"accommodation"`
+		AccommodationName string   `json:"accommodation_name"`
+		AccommodationLocation struct {
+			Lat float64 `json:"lat"`
+			Lon float64 `json:"lon"`
+		} `json:"accommodation_location"`
+	} `json:"trip_plan"`
+	Paths           []struct {
 		From       string  `json:"from"`
 		FromName   string  `json:"from_name"`
 		To         string  `json:"to"`
 		ToName     string  `json:"to_name"`
 		DistanceKm float64 `json:"distance_km"`
+		Day        int     `json:"day,omitempty"` // ถ้ามีข้อมูลวันด้วย
 	} `json:"paths"`
 	TotalDistanceKm float64 `json:"total_distance_km"`
 	Message         string  `json:"message"`
 	Error           string  `json:"error,omitempty"`
 }
+
 
 func (rc *RouteController) GenerateRoute(c *gin.Context) {
 	startNode := c.Query("start")

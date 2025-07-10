@@ -43,42 +43,60 @@ const Chat = () => {
     return null;
   };
 
+
   const generateRouteAndPlan = async (id: number, keyword: string, days: number) => {
     try {
       setLoading(true);
-      setMessages(prev => [...prev, { text: `กำลังสร้างแผนทริปสำหรับ "${keyword}"...`, sender: 'bot' }]);
+      setMessages((prev) => [...prev, { text: `กำลังสร้างแผนทริปสำหรับ "${keyword}"...`, sender: 'bot' }]);
 
       const routeData = await GetRouteFromAPI(id, days);
 
+      // ปรับ prompt ให้ LLM สร้างแผนทริปแบบแบ่งวันและเวลา ตามตัวอย่าง
       const prompt = `
-คุณคือผู้ช่วยวางแผนทัวร์ที่เชี่ยวชาญ
+คุณคือผู้ช่วยวางแผนทริปท่องเที่ยวมืออาชีพ ช่วยจัดเส้นทางและแบ่งเวลากิจกรรมให้เหมาะสมกับความสะดวกของผู้เดินทาง
 
-ข้อมูลเส้นทางนี้เริ่มจาก "${keyword}" มีจำนวนวัน ${days} วัน
+ผู้ใช้เดินทางในกรุงเทพฯ จำนวน ${days} วัน เริ่มต้นจาก "${routeData.start_name}"
 
-โปรดช่วยจัดแผนทริปให้อ่านง่ายและสนุก เหมือนเล่าให้เพื่อนฟัง โดย:
-
-- แบ่งแผนเป็นแต่ละวัน (เช่น วันแรก, วันที่สอง, ...)
-- แต่ละวันบอกลำดับสถานที่ที่ไป พร้อมคำอธิบายสั้นๆ ว่าควรทำอะไรที่นั่น เช่น ชมวิว, ทานอาหาร, พักผ่อน
-- เขียนเป็นข้อความธรรมชาติ ไม่ต้องเป็นตาราง หรือแสดงรหัสสถานที่ เช่น Pxxx, Rxxx
-- สรุประยะทางคร่าวๆ ของแต่ละวันให้ท้ายข้อความ
-
-ข้อมูลเส้นทาง (paths) ดังนี้:
+ข้อมูลเส้นทางทั้งหมด (paths) และแผนเดินทางรายวัน (trip_plan) มีดังนี้:
 ${JSON.stringify(routeData.paths, null, 2)}
 
-ช่วยจัดแผนท่องเที่ยวตามข้อมูลนี้ให้ด้วยค่ะ
-      `;
+${JSON.stringify(routeData.trip_plan, null, 2)}
+
+โปรดช่วยจัดแผนทริปในรูปแบบนี้:
+
+- แบ่งตามวัน เช่น "วันที่หนึ่ง", "วันที่สอง" ตามจำนวนวันเดินทาง
+- กำหนดเวลาทำกิจกรรมแต่ละช่วงอัตโนมัติ ช่วงละประมาณ 1.5-3 ชั่วโมง โดยปรับเวลาตามจำนวนกิจกรรมและเวลาว่างในแต่ละวัน
+
+- กิจกรรมในแต่ละวันอยู่ระหว่าง 08:00-21:00 ต่อเนื่อง ไม่ซ้อนกัน
+- เพิ่มเวลาพักผ่อนที่ที่พัก 19:00-21:00 หลังมื้อเย็นทุกวัน
+- หากสถานที่ซ้ำกันในหลายวัน ให้จัดกิจกรรมให้แตกต่างกันและไม่ซ้ำซ้อน
+- สำหรับแต่ละสถานที่:
+  - รหัสขึ้นต้น P = สถานที่ท่องเที่ยว ให้ระบุชื่อสถานที่และคำอธิบายกิจกรรม เช่น "ไหว้พระที่...", "เที่ยวชม...", "เดินเล่นที่..."
+  - รหัสขึ้นต้น R = ร้านอาหารหรือของว่าง ให้ระบุชื่อร้านและคำอธิบาย เช่น "รับประทานอาหารกลางวันที่...", "ทานของว่างที่..."
+  - รหัสขึ้นต้น A = ที่พัก ให้ระบุชื่อที่พักและคำอธิบาย เช่น "พักผ่อนที่ที่พัก", "เช็คอินและพักผ่อน"
+- ห้ามใช้รหัสสถานที่ในข้อความแผนทริป แสดงเฉพาะชื่อสถานที่และคำอธิบายเท่านั้น
+- จัดเรียงกิจกรรมตามลำดับในข้อมูล paths และ trip_plan
+- ใช้ภาษากระชับ สุภาพ อ่านง่าย มีการเว้นบรรทัดและแบ่งช่วงเวลาอย่างชัดเจน
+- หากสถานที่หรือร้านอาหารซ้ำในหลายวัน ให้เขียนแผนแยกวันอย่างชัดเจน
+
+กรุณาจัดแผนทริปให้ครบทั้ง ${days} วัน โดยเรียงลำดับสถานที่ตามข้อมูลเส้นทางที่ให้มา
+`
+;
+
+
+
 
       const groqRes = await PostGroq(prompt);
       const tripPlan = groqRes?.choices?.[0]?.message?.content?.trim();
 
       if (!tripPlan) {
-        throw new Error("Groq ไม่ได้ตอบกลับข้อความที่ต้องการ");
+        throw new Error('Groq ไม่ได้ตอบกลับข้อความที่ต้องการ');
       }
 
-      setMessages(prev => [...prev, { text: tripPlan, sender: 'bot', isTripPlan: true }]);
+      setMessages((prev) => [...prev, { text: tripPlan, sender: 'bot', isTripPlan: true }]);
     } catch (error) {
       console.error('Error generating route or calling Groq', error);
-      setMessages(prev => [
+      setMessages((prev) => [
         ...prev,
         { text: 'ขออภัย เกิดข้อผิดพลาดระหว่างการสร้างแผนทริป กรุณาลองใหม่ภายหลัง', sender: 'bot' },
       ]);
@@ -89,11 +107,9 @@ ${JSON.stringify(routeData.paths, null, 2)}
 
   const handleUserMessage = async (userMessage: string) => {
     if (!userMessage.trim()) return;
-    setMessages(prev => [...prev, { text: userMessage, sender: 'user' }]);
+    setMessages((prev) => [...prev, { text: userMessage, sender: 'user' }]);
 
-    const lastConfirm = [...messages].reverse().find(
-      m => m.sender === 'bot' && m.data && m.data.id && !m.data.days
-    );
+    const lastConfirm = [...messages].reverse().find((m) => m.sender === 'bot' && m.data && m.data.id && !m.data.days);
 
     if (lastConfirm) {
       const days = parseInt(userMessage.replace(/[^\d]/g, ''), 10);
@@ -101,9 +117,13 @@ ${JSON.stringify(routeData.paths, null, 2)}
         generateRouteAndPlan(lastConfirm.data.id, lastConfirm.data.keyword, days);
         return;
       } else {
-        setMessages(prev => [...prev, {
-          text: 'กรุณาพิมพ์จำนวนวันเป็นตัวเลข เช่น 3', sender: 'bot'
-        }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: 'กรุณาพิมพ์จำนวนวันเป็นตัวเลข เช่น 3',
+            sender: 'bot',
+          },
+        ]);
         return;
       }
     }
@@ -111,15 +131,13 @@ ${JSON.stringify(routeData.paths, null, 2)}
     const analysis = extractKeywordAndDays(userMessage);
     if (analysis?.keyword) {
       const keyword = analysis.keyword.toLowerCase();
-      const matched = landmarks.find(l =>
-        l.Name?.toLowerCase().includes(keyword)
-      );
+      const matched = landmarks.find((l) => l.Name?.toLowerCase().includes(keyword));
 
       if (matched && matched.ID != null) {
         if (analysis.days) {
           generateRouteAndPlan(matched.ID, analysis.keyword, analysis.days);
         } else {
-          setMessages(prev => [
+          setMessages((prev) => [
             ...prev,
             {
               text: `คุณต้องการไป "${analysis.keyword}" กี่วันคะ? กรุณาพิมพ์จำนวนวันเป็นตัวเลข`,
@@ -129,17 +147,18 @@ ${JSON.stringify(routeData.paths, null, 2)}
           ]);
         }
       } else {
-        setMessages(prev => [...prev, {
-          text: `ไม่พบสถานที่ "${analysis.keyword}"`, sender: 'bot'
-        }]);
+        setMessages((prev) => [...prev, { text: `ไม่พบสถานที่ "${analysis.keyword}"`, sender: 'bot' }]);
       }
       return;
     }
 
-    setMessages(prev => [...prev, {
-      text: 'ขอบคุณสำหรับข้อความค่ะ หากต้องการวางแผนทริป พิมพ์ว่า "ฉันอยากไป..." พร้อมจำนวนวัน',
-      sender: 'bot'
-    }]);
+    setMessages((prev) => [
+      ...prev,
+      {
+        text: 'ขอบคุณสำหรับข้อความค่ะ หากต้องการวางแผนทริป พิมพ์ว่า "ฉันอยากไป..." พร้อมจำนวนวัน',
+        sender: 'bot',
+      },
+    ]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
