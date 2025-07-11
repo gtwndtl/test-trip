@@ -7,15 +7,15 @@ const ProcessSpinner = () => {
             <div className="loader">
                 <p>Process</p>
                 <div className="words">
+                    <span className="word">user</span>
+                    <span className="word">condition</span>
                     <span className="word">landmark</span>
                     <span className="word">restaurant</span>
                     <span className="word">hotel</span>
-                    <span className="word">condition</span>
-                    <span className="word">user</span>
                 </div>
             </div>
         </div>
-  )
+    )
 }
 
 export default ProcessSpinner

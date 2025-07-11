@@ -7,7 +7,7 @@ const LandingPage = () => {
   return (
     <div className="landing-page">
       <div className="hero-section"><HeroSection /></div>
-      <div className="features-section"><FeaturesSection /></div>
+      {/* <div className="features-section"><FeaturesSection /></div> */}
       <div className="section"><Section /></div>
     </div>
   );
