@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	"github.com/gtwndtl/trip-spark-builder/entity"
+	"gorm.io/gorm"
 )
 
 type TripsController struct {
@@ -36,7 +36,9 @@ func (ctrl *TripsController) GetAllTrips(c *gin.Context) {
 	if err := ctrl.DB.
 		Preload("Con").
 		Preload("Acc").
-		Preload("Path").
+		Preload("ShortestPaths", func(db *gorm.DB) *gorm.DB {
+			return db.Order("day, index")
+		}).
 		Find(&trips).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถดึงข้อมูลได้"})
 		return
@@ -51,7 +53,9 @@ func (ctrl *TripsController) GetTripByID(c *gin.Context) {
 	if err := ctrl.DB.
 		Preload("Con").
 		Preload("Acc").
-		Preload("Path").
+		Preload("ShortestPaths", func(db *gorm.DB) *gorm.DB {
+			return db.Order("day, index")
+		}).
 		First(&trip, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูลทริป"})
 		return
@@ -62,27 +66,48 @@ func (ctrl *TripsController) GetTripByID(c *gin.Context) {
 // PUT /trips/:id
 func (ctrl *TripsController) UpdateTrip(c *gin.Context) {
 	id := c.Param("id")
+
 	var trip entity.Trips
 	if err := ctrl.DB.First(&trip, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูล"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูลทริป"})
 		return
 	}
 
-	if err := c.ShouldBindJSON(&trip); err != nil {
+	var input entity.Trips
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctrl.DB.Save(&trip)
+	trip.Name = input.Name
+	trip.Types = input.Types
+	trip.Days = input.Days
+	trip.Con_id = input.Con_id
+	trip.Acc_id = input.Acc_id
+
+	if err := ctrl.DB.Save(&trip).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอัพเดตข้อมูลได้"})
+		return
+	}
+
 	c.JSON(http.StatusOK, trip)
 }
 
 // DELETE /trips/:id
 func (ctrl *TripsController) DeleteTrip(c *gin.Context) {
 	id := c.Param("id")
-	if err := ctrl.DB.Delete(&entity.Trips{}, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถลบข้อมูลได้"})
+
+	// ลบเส้นทางที่เกี่ยวข้องก่อน
+	if err := ctrl.DB.Where("trip_id = ?", id).Delete(&entity.Shortestpath{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถลบเส้นทางได้"})
 		return
 	}
+
+	// ลบทริป
+	if err := ctrl.DB.Delete(&entity.Trips{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถลบทริปได้"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "ลบข้อมูลสำเร็จ"})
 }

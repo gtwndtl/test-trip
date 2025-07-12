@@ -1,12 +1,20 @@
+import type { ShortestpathInterface } from "./Shortestpath";
+
 export interface TripInterface {
-    ID?: number;
-    Created_at?: string; // Use string to represent date in 'YYYY-MM-DD' format
-    Name?: string; // Name of the trip
-    Types?: string; // Type of the trip (e.g., adventure, cultural)
-    Day?: string; // Use string to represent date in 'YYYY-MM-DD' format
-    Con_id?: number; // Condition ID
-    Acc_id?: number; // Accommodation ID
-    Path_id?: number; // Shortest path ID
+  ID?: number;              // ตรงกับ gorm.Model.ID (uint)
+  CreatedAt?: string;       // gorm.Model.CreatedAt (string ISO date)
+  UpdatedAt?: string;       // gorm.Model.UpdatedAt (string ISO date)
+  DeletedAt?: string | null;// gorm.Model.DeletedAt (soft delete)
+
+  Name?: string;            // Name
+  Types?: string;           // Types
+  Days?: number;            // Days
+
+  Con_id?: number;          // Foreign key Condition ID
+  Acc_id?: number;          // Foreign key Accommodation ID
+
+
+  ShortestPaths?: ShortestpathInterface[]; // Array ของ Shortestpath
 }
 // Created_at     time.Time
 // 	Name string 

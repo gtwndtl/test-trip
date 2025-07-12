@@ -8,10 +8,10 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def haversine(lat1, lon1, lat2, lon2):
-    R = 6371  # km
+    R = 6371
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
-    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1))*math.cos(math.radians(lat2))*math.sin(dlon/2)**2
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
     return 2 * R * math.asin(math.sqrt(a))
 
 def load_data(url, prefix):
@@ -24,8 +24,7 @@ def build_graph(places):
     graph = defaultdict(list)
     for i in range(len(places)):
         for j in range(i+1, len(places)):
-            a = places[i]
-            b = places[j]
+            a, b = places[i], places[j]
             dist = haversine(float(a['Lat']), float(a['Lon']), float(b['Lat']), float(b['Lon']))
             graph[a['id']].append((b['id'], dist))
             graph[b['id']].append((a['id'], dist))
@@ -70,48 +69,57 @@ def plan_trip(start_id, days, landmarks, accommodations, restaurants):
 
     all_places = landmarks + accommodations + restaurants
     place_lookup = {p['id']: p for p in all_places}
-
     graph = build_graph(all_places)
 
     remaining_p = set(p_list)
     remaining_r = set(r_list)
-
     trip_days = []
-    all_selected_p = set([start_id])  # เก็บ P ที่เลือกทั้งหมด
-
-    current_start = start_id
+    all_selected_p = set([start_id])
+    used_first_ps = set([start_id])
 
     for day in range(days):
         day_plan = []
-        if current_start is None:
-            break
 
-        day_plan.append(current_start)  # เริ่มวันด้วย current_start
+        if day == 0:
+            current_start = start_id
+            day_plan.append(current_start)
+        else:
+            candidates = [p for p in remaining_p if p not in used_first_ps]
+            if not candidates:
+                break
+            current_start = min(candidates, key=lambda p: next((d for n,d in graph[trip_days[-1]["plan"][-1]] if n == p), float('inf')))
+            remaining_p.discard(current_start)
+            all_selected_p.add(current_start)
+            used_first_ps.add(current_start)
+            day_plan.append(current_start)
 
-        # P 1 จุด
-        next_p1 = get_nearest_points(day_plan[-1], remaining_p, 1, graph)
-        if next_p1:
-            day_plan.extend(next_p1)
-            for p in next_p1:
-                remaining_p.discard(p)
-                all_selected_p.add(p)
-
-        # R 1 จุด
-        if remaining_r:
-            r1 = find_nearest(day_plan[-1], remaining_r, graph)
-            if r1:
-                day_plan.append(r1)
-                remaining_r.discard(r1)
-
-        # P 2 จุด
-        next_p2 = get_nearest_points(day_plan[-1], remaining_p, 2, graph)
+        next_p2 = get_nearest_points(day_plan[-1], remaining_p, 1, graph)
         if next_p2:
             day_plan.extend(next_p2)
             for p in next_p2:
                 remaining_p.discard(p)
                 all_selected_p.add(p)
 
-        # R 1 จุด
+        if remaining_r:
+            r1 = find_nearest(day_plan[-1], remaining_r, graph)
+            if r1:
+                day_plan.append(r1)
+                remaining_r.discard(r1)
+
+        next_p3 = get_nearest_points(day_plan[-1], remaining_p, 1, graph)
+        if next_p3:
+            day_plan.extend(next_p3)
+            for p in next_p3:
+                remaining_p.discard(p)
+                all_selected_p.add(p)
+
+        next_p4 = get_nearest_points(day_plan[-1], remaining_p, 1, graph)
+        if next_p4:
+            day_plan.extend(next_p4)
+            for p in next_p4:
+                remaining_p.discard(p)
+                all_selected_p.add(p)
+
         if remaining_r:
             r2 = find_nearest(day_plan[-1], remaining_r, graph)
             if r2:
@@ -120,22 +128,18 @@ def plan_trip(start_id, days, landmarks, accommodations, restaurants):
 
         trip_days.append({"day": day + 1, "plan": day_plan})
 
-        # คำนวณที่พักจาก P ทั้งหมดที่เลือกในทริป
-        if a_list and all_selected_p:
-            accommodation_id = min(a_list, key=lambda a: average_distance(a, all_selected_p, graph))
-            accommodation_info = place_lookup[accommodation_id]
-        else:
-            accommodation_id = None
-            accommodation_info = None
-
-        # ไม่เปลี่ยน current_start เป็น accommodation_id เพื่อไม่ให้ที่พักโผล่ใน plan ของวันถัดไป
-        # current_start = accommodation_id  # ลบบรรทัดนี้
-
-        # ถ้า P กับ R หมดก่อนก็หยุด
         if not remaining_p and not remaining_r:
             break
 
-    # อัพเดต accommodation ในทุกวัน (ที่พักเดียวตลอดทริป)
+    # --- หลังวางแผนครบทุกวันแล้ว ให้เลือกที่พักจาก P ทั้งหมดในทริป ---
+    if a_list and all_selected_p:
+        accommodation_id = min(a_list, key=lambda a: average_distance(a, all_selected_p, graph))
+        accommodation_info = place_lookup[accommodation_id]
+    else:
+        accommodation_id = None
+        accommodation_info = None
+
+    # แทรกข้อมูลที่พักลงในแต่ละวัน
     for day_info in trip_days:
         day_info["accommodation"] = accommodation_id
         day_info["accommodation_name"] = accommodation_info["Name"] if accommodation_info else None
@@ -144,7 +148,7 @@ def plan_trip(start_id, days, landmarks, accommodations, restaurants):
             "lon": accommodation_info["Lon"],
         } if accommodation_info else None
 
-    # สร้าง detailed_routes โดยไม่รวมที่พักในเส้นทางเดิน
+    # สร้างเส้นทางละเอียด
     detailed_routes = []
     total_distance = 0.0
     for day_info in trip_days:
@@ -152,11 +156,8 @@ def plan_trip(start_id, days, landmarks, accommodations, restaurants):
         for i in range(len(plan) - 1):
             frm = plan[i]
             to = plan[i + 1]
-
-            # ข้ามเส้นทางที่เริ่มหรือสิ้นสุดที่พัก (accommodation_id)
             if frm == accommodation_id or to == accommodation_id:
                 continue
-
             dist = next((d for n, d in graph[frm] if n == to), 0)
             total_distance += dist
             detailed_routes.append({
@@ -186,8 +187,6 @@ def plan_trip(start_id, days, landmarks, accommodations, restaurants):
         }
     }
 
-
-
 def main():
     if len(sys.argv) < 3:
         print(json.dumps({"error": "กรุณาระบุ start_id และ days"}))
@@ -201,6 +200,7 @@ def main():
     restaurants = load_data("http://localhost:8080/restaurants", "R")
 
     result = plan_trip(start_id, days, landmarks, accommodations, restaurants)
+
     print(json.dumps(result, ensure_ascii=False))
 
 if __name__ == "__main__":

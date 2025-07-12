@@ -1,11 +1,25 @@
 export interface ShortestpathInterface {
-    ID?: number; // Unique identifier for the shortest path
-    Start_node_id?: number; // Accommodation ID
-    End_node_lan?: number; // Landmark ID
-    End_node_res?: number; // Restaurant ID
-    Time?: string; // Use string to represent time in 'YYYY-MM-DD HH:mm:ss' format
-    Total_distance?: number; // Use number for total distance
+  ID?: number;              // gorm.Model.ID
+  CreatedAt?: string;       // gorm.Model.CreatedAt
+  UpdatedAt?: string;       // gorm.Model.UpdatedAt
+  DeletedAt?: string | null;// gorm.Model.DeletedAt
+
+  TripID?: number;          // Foreign key ไป Trips.ID
+  Day?: number;             // วันที่
+  Index?: number;           // ลำดับกิจกรรมในวัน
+
+  FromCode?: string;        // รหัสสถานที่เริ่มต้น
+  ToCode?: string;          // รหัสสถานที่ปลายทาง
+
+  Type?: string;            // ประเภทเส้นทาง (เช่น "walk", "drive")
+
+  Distance?: number;        // ระยะทาง (float32 ใน Go ใช้ number ใน TS)
+
+  ActivityDescription?: string; // คำอธิบายกิจกรรม
+  StartTime?: string;           // เวลาเริ่ม เช่น "08:00"
+  EndTime?: string;             // เวลาสิ้นสุด เช่น "09:00"
 }
+
 
 	// Start_node_id  uint      
    	// Acc    *Accommodation  `gorm:"foreignKey:Start_node_id"`

@@ -91,14 +91,14 @@ func main() {
 	authorized.POST("/users", userCtrl.CreateUser) // ถ้าต้องการให้สร้าง user ต้องล็อกอินก่อน ถ้าไม่ก็เอาไว้ public ก็ได้
 
 	// Trips routes
-	authorized.POST("/trips", tripsCtrl.CreateTrip)
+	r.POST("/trips", tripsCtrl.CreateTrip)
 	authorized.GET("/trips", tripsCtrl.GetAllTrips)
 	authorized.GET("/trips/:id", tripsCtrl.GetTripByID)
 	authorized.PUT("/trips/:id", tripsCtrl.UpdateTrip)
 	authorized.DELETE("/trips/:id", tripsCtrl.DeleteTrip)
 
 	// Shortest Path routes
-	authorized.POST("/shortest-paths", shortestpathCtrl.CreateShortestPath)
+	r.POST("/shortest-paths", shortestpathCtrl.CreateShortestPath)
 	authorized.GET("/shortest-paths", shortestpathCtrl.GetAllShortestPaths)
 	authorized.GET("/shortest-paths/:id", shortestpathCtrl.GetShortestPathByID)
 	authorized.PUT("/shortest-paths/:id", shortestpathCtrl.UpdateShortestPath)

@@ -118,7 +118,7 @@ async function DeleteCondition(id: number): Promise<void> {
 
 async function GetAllShortestPaths(): Promise<ShortestpathInterface[]> {
     try {
-        const response = await axios.get<ShortestpathInterface[]>(`${apiUrl}/shortestpaths`, requestOptions);
+        const response = await axios.get<ShortestpathInterface[]>(`${apiUrl}/shortest-paths`, requestOptions);
         return response.data;
     } catch (error) {
         throw new Error((error as AxiosError).message);
@@ -127,7 +127,7 @@ async function GetAllShortestPaths(): Promise<ShortestpathInterface[]> {
 
 async function GetShortestPathById(id: number): Promise<ShortestpathInterface> {
     try {
-        const response = await axios.get<ShortestpathInterface>(`${apiUrl}/shortestpaths/${id}`, requestOptions);
+        const response = await axios.get<ShortestpathInterface>(`${apiUrl}/shortest-paths/${id}`, requestOptions);
         return response.data;
     } catch (error) {
         throw new Error((error as AxiosError).message);
@@ -135,17 +135,17 @@ async function GetShortestPathById(id: number): Promise<ShortestpathInterface> {
 }
 
 async function CreateShortestPath(shortestPath: ShortestpathInterface): Promise<ShortestpathInterface> {
-    try {
-        const response = await axios.post<ShortestpathInterface>(`${apiUrl}/shortestpaths`, shortestPath, requestOptions);
-        return response.data;
-    } catch (error) {
-        throw new Error((error as AxiosError).message);
-    }
+  try {
+    const response = await axios.post<ShortestpathInterface>(`${apiUrl}/shortest-paths`, shortestPath, requestOptions);
+    return response.data;
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
 }
 
 async function UpdateShortestPath(id: number, shortestPath: ShortestpathInterface): Promise<ShortestpathInterface> {
     try {
-        const response = await axios.put<ShortestpathInterface>(`${apiUrl}/shortestpaths/${id}`, shortestPath, requestOptions);
+        const response = await axios.put<ShortestpathInterface>(`${apiUrl}/shortest-paths/${id}`, shortestPath, requestOptions);
         return response.data;
     } catch (error) {
         throw new Error((error as AxiosError).message);
@@ -154,7 +154,7 @@ async function UpdateShortestPath(id: number, shortestPath: ShortestpathInterfac
 
 async function DeleteShortestPath(id: number): Promise<void> {
     try {
-        await axios.delete(`${apiUrl}/shortestpaths/${id}`, requestOptions);
+        await axios.delete(`${apiUrl}/shortest-paths/${id}`, requestOptions);
     } catch (error) {
         throw new Error((error as AxiosError).message);
     }
