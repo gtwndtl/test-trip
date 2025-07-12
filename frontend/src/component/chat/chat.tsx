@@ -13,12 +13,7 @@ import {
   CreateShortestPath,
 } from '../../services/https';
 
-// ฟังก์ชันช่วยแปลงเวลานาทีเป็น HH:MM
-function minutesToHHMM(minutes: number) {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-}
+
 
 // ฟังก์ชัน parse ข้อความแผนทริป LLM เป็น array กิจกรรม {day, startTime, endTime, description}
 function parseTripPlanTextToActivities(text: string) {
