@@ -27,48 +27,47 @@ function parseTripPlanTextToActivities(text: string) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Detect วันที่ เช่น ### **วันที่ 1**
-    const dayMatch = line.match(/วันที่\s*(\d+)/);
+    // รองรับ วันที่ 1**, ### วันที่ 1, วันที่ 1 **
+    const dayMatch = line.match(/(?:#+\s*)?วันที่\s*(\d+)\**/i);
     if (dayMatch) {
       currentDay = parseInt(dayMatch[1], 10);
       continue;
     }
 
-    // Detect เวลาช่วง เช่น 08:00 - 09:00 หรือ 08:00–09:00
-    const timeMatch = line.match(/^(\d{2}:\d{2})\s*[–\-]\s*(\d{2}:\d{2})$/);
-    if (timeMatch && currentDay > 0 && i + 1 < lines.length) {
-      const startTime = timeMatch[1];
-      const endTime = timeMatch[2];
+    if (currentDay === 0) continue;
+
+    // ✅ เคส: "08:00 - 09:00 เช็คอินที่ ..."
+    const timeDescInlineMatch = line.match(/^(\d{2}:\d{2})\s*[–\-]\s*(\d{2}:\d{2})\s+(.+)/);
+    if (timeDescInlineMatch) {
+      const [, startTime, endTime, description] = timeDescInlineMatch;
+      activities.push({ day: currentDay, startTime, endTime, description });
+      continue;
+    }
+
+    // ✅ เคส: "08:00 - 09:00" + บรรทัดต่อไปเป็นคำอธิบาย
+    const timeOnlyMatch = line.match(/^(\d{2}:\d{2})\s*[–\-]\s*(\d{2}:\d{2})$/);
+    if (timeOnlyMatch && i + 1 < lines.length) {
+      const startTime = timeOnlyMatch[1];
+      const endTime = timeOnlyMatch[2];
       const description = lines[i + 1];
-      activities.push({
-        day: currentDay,
-        startTime,
-        endTime,
-        description,
-      });
-      i++; // ข้ามบรรทัดถัดไปที่เป็นคำอธิบายแล้ว
-    } else if (currentDay > 0) {
-  const singleTimeMatch = line.match(/^(\d{2}:\d{2})\s+(.+)/);
-  if (singleTimeMatch) {
-    const startTime = singleTimeMatch[1];
-    // กำหนด endTime เป็น startTime + 1 ชั่วโมง
-    const [h, m] = startTime.split(':').map(Number);
-    let endH = h + 1;
-    if (endH >= 24) endH = 23; // ป้องกันเกิน 23:59
-    const endTime = `${endH.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+      activities.push({ day: currentDay, startTime, endTime, description });
+      i++;
+      continue;
+    }
 
-    const description = singleTimeMatch[2];
-    activities.push({
-      day: currentDay,
-      startTime,
-      endTime,
-      description,
-    });
-  }
-}
-
+    // ✅ เคสพิเศษ: "20:00 เป็นต้นไป พักผ่อนที่ ..." → แปลงเป็น 20:00–21:00
+    const singleLineSpecial = line.match(/^(\d{2}:\d{2})\s+(.+)/);
+    if (singleLineSpecial) {
+      const [_, startTime, description] = singleLineSpecial;
+      const [h, m] = startTime.split(':').map(Number);
+      const endH = Math.min(h + 1, 23);
+      const endTime = `${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      activities.push({ day: currentDay, startTime, endTime, description });
+      continue;
+    }
   }
 
+  console.log('✅ parsed activities:', activities);
   return activities;
 }
 
@@ -171,7 +170,7 @@ ${JSON.stringify(routeData.trip_plan, null, 2)}
 - แบ่งแผนตามวัน เช่น “วันที่ 1”, “วันที่ 2” พร้อมระบุช่วงเวลา (เช่น 09:00–10:30) ให้เหมาะสมกับจำนวนกิจกรรมในแต่ละวัน
 - ใช้ช่วงเวลาแต่ละกิจกรรมประมาณ 1.5–3 ชั่วโมง และจัดตามลำดับใน paths และ trip_plan
 - เริ่มกิจกรรมแต่ละวันเวลาประมาณ 08:00
-- ห้ามใช้คำว่า “เป็นต้นไป” ให้ระบุช่วงเวลาอย่างชัดเจน เช่น 18:00–20.00
+- ห้ามใช้คำว่า “เป็นต้นไป” ให้ระบุช่วงเวลาอย่างชัดเจนเท่านั้น เช่น 18:00–20.00
 - วันแรกให้เริ่มต้นด้วยกิจกรรม “เช็คอินที่ <ชื่อที่พัก>” เวลา 08:00–09:00
 - สิ้นสุดทุกวันด้วย “พักผ่อนที่ <ชื่อที่พัก>” ช่วงเย็น
 - วันสุดท้ายให้ปิดท้ายด้วย “เช็คเอาท์และเดินทางกลับ” หลังจบกิจกรรมสุดท้าย และต้องมีเวลา เริ่มต้น - จบ เสมอ เช่น 19:00-20:00
