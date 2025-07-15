@@ -2,33 +2,52 @@ package config
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
-	"github.com/gtwndtl/trip-spark-builder/entity"
-	"gorm.io/driver/sqlite"
 	"github.com/xuri/excelize/v2"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"strconv"
+
+	"github.com/gtwndtl/trip-spark-builder/entity"
 )
 
-var db *gorm.DB
+var (
+	dbSqlite   *gorm.DB
+	dbPostgres *gorm.DB
+)
 
 func DB() *gorm.DB {
-	return db
+	return dbSqlite
+}
+
+func PGDB() *gorm.DB {
+	return dbPostgres
 }
 
 func ConnectionDB() {
-	database, err := gorm.Open(sqlite.Open("final.db?cache=shared"), &gorm.Config{})
+	var err error
+
+	// SQLite connection
+	dbSqlite, err = gorm.Open(sqlite.Open("final.db?cache=shared"), &gorm.Config{})
 	if err != nil {
-		panic("failed to connect database")
+		panic("❌ Failed to connect SQLite")
 	}
-	fmt.Println("connected database")
-	db = database
+	fmt.Println("✅ Connected to SQLite")
+
+	// PostgreSQL connection
+	dsn := "host=localhost user=postgres password=1 dbname=postgres port=5432 sslmode=disable TimeZone=Asia/Bangkok"
+	dbPostgres, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic("❌ Failed to connect PostgreSQL")
+	}
+	fmt.Println("✅ Connected to PostgreSQL")
 }
 
 func SetupDatabase() {
-	db.AutoMigrate(
-		//ระบบจัดการข้อมูลอาจารย์
+	// Migrate only non-GIS tables in SQLite
+	err := dbSqlite.AutoMigrate(
 		&entity.Accommodation{},
 		&entity.Condition{},
 		&entity.Landmark{},
@@ -37,24 +56,42 @@ func SetupDatabase() {
 		&entity.Trips{},
 		&entity.User{},
 	)
-	fmt.Println("✅ Tables migrated successfully")
-
-	hashedPassword, _ := HashPassword("123456")
-
-	user := entity.User{
-		Password:   hashedPassword,
-		Firstname:  "John",
-		Lastname:   "Doe",
-		Age:        30,
-		Birthday:   time.Date(1993, 1, 1, 0, 0, 0, 0, time.UTC),
+	if err != nil {
+		panic(err)
 	}
-	db.FirstOrCreate(&user, entity.User{Email: "a@gmail.com"})
+
+	// Migrate only GIS tables in PostgreSQL
+	err = dbPostgres.AutoMigrate(
+		&entity.AccommodationGis{},
+		&entity.LandmarkGis{},
+		&entity.RestaurantGis{},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create demo user
+	hashedPassword, _ := HashPassword("123456")
+	user := entity.User{
+		Password:  hashedPassword,
+		Firstname: "John",
+		Lastname:  "Doe",
+		Age:       30,
+		Birthday:  time.Date(1993, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	dbSqlite.FirstOrCreate(&user, entity.User{Email: "a@gmail.com"})
+
+	fmt.Println("✅ All tables migrated successfully")
 }
 
 func LoadExcelData(db *gorm.DB) {
 	loadAccommodations(db)
 	loadLandmarks(db)
 	loadRestaurants(db)
+	loadAccommodationGIS()
+	loadLandmarkGIS()
+	loadRestaurantGIS()
+	
 }
 
 func loadAccommodations(db *gorm.DB) {
@@ -62,20 +99,17 @@ func loadAccommodations(db *gorm.DB) {
 	if err != nil {
 		panic(err)
 	}
-
 	rows, err := f.GetRows("Sheet1")
 	if err != nil {
 		panic(err)
 	}
-
 	for i, row := range rows {
-		if i == 0 || len(row) < 10 { // ข้าม header หรือแถวไม่ครบ
+		if i == 0 || len(row) < 11 {
 			continue
 		}
 		lat, _ := strconv.ParseFloat(row[3], 32)
 		lon, _ := strconv.ParseFloat(row[4], 32)
 		place, _ := strconv.Atoi(row[0])
-
 		data := entity.Accommodation{
 			PlaceID:      place,
 			Name:         row[1],
@@ -102,20 +136,17 @@ func loadLandmarks(db *gorm.DB) {
 	if err != nil {
 		panic(err)
 	}
-
 	rows, err := f.GetRows("Sheet1")
 	if err != nil {
 		panic(err)
 	}
-
 	for i, row := range rows {
-		if i == 0 || len(row) < 7 {
+		if i == 0 || len(row) < 11 {
 			continue
 		}
 		lat, _ := strconv.ParseFloat(row[3], 32)
 		lon, _ := strconv.ParseFloat(row[4], 32)
 		place, _ := strconv.Atoi(row[0])
-
 		data := entity.Landmark{
 			PlaceID:      place,
 			Name:         row[1],
@@ -142,20 +173,17 @@ func loadRestaurants(db *gorm.DB) {
 	if err != nil {
 		panic(err)
 	}
-
 	rows, err := f.GetRows("Sheet1")
 	if err != nil {
 		panic(err)
 	}
-
 	for i, row := range rows {
-		if i == 0 || len(row) < 9 {
+		if i == 0 || len(row) < 11 {
 			continue
 		}
 		lat, _ := strconv.ParseFloat(row[3], 32)
 		lon, _ := strconv.ParseFloat(row[4], 32)
 		place, _ := strconv.Atoi(row[0])
-
 		data := entity.Restaurant{
 			PlaceID:      place,
 			Name:         row[1],
@@ -177,15 +205,41 @@ func loadRestaurants(db *gorm.DB) {
 	}
 }
 
-// Create a default user if not exists
-// func CreateDefaultUser(db *gorm.DB) {
-// 	user := entity.User{
-// 		Password:   "12345678",
-// 		Firstname:  "John",
-// 		Lastname:   "Doe",
-// 		Age:        30,
-// 		Birthday:   time.Date(1993, 1, 1, 0, 0, 0, 0, time.UTC),
-// 		Email:      "a@gmail.com",
-// 	}
-// 	db.FirstOrCreate(&user, entity.User{Email: "a@gmail.com"})
-// }
+func loadAccommodationGIS() {
+	var accommodations []entity.Accommodation
+	dbSqlite.Find(&accommodations)
+	for _, acc := range accommodations {
+		location := fmt.Sprintf("SRID=4326;POINT(%f %f)", acc.Lon, acc.Lat)
+		gis := entity.AccommodationGis{
+			Acc_ID:   acc.ID,
+			Location: location,
+		}
+		dbPostgres.Create(&gis)
+	}
+}
+
+func loadLandmarkGIS() {
+	var landmarks []entity.Landmark
+	dbSqlite.Find(&landmarks)
+	for _, lm := range landmarks {
+		location := fmt.Sprintf("SRID=4326;POINT(%f %f)", lm.Lon, lm.Lat)
+		gis := entity.LandmarkGis{
+			LandmarkID: lm.ID,
+			Location:   location,
+		}
+		dbPostgres.Create(&gis)
+	}
+}
+
+func loadRestaurantGIS() {
+	var restaurants []entity.Restaurant
+	dbSqlite.Find(&restaurants)
+	for _, r := range restaurants {
+		location := fmt.Sprintf("SRID=4326;POINT(%f %f)", r.Lon, r.Lat)
+		gis := entity.RestaurantGis{
+			RestaurantID: r.ID,
+			Location:     location,
+		}
+		dbPostgres.Create(&gis)
+	}
+}
