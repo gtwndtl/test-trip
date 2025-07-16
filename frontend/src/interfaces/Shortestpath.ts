@@ -6,7 +6,7 @@ export interface ShortestpathInterface {
 
   TripID?: number;          // Foreign key ไป Trips.ID
   Day?: number;             // วันที่
-  Index?: number;           // ลำดับกิจกรรมในวัน
+  PathIndex ?: number;           // ลำดับกิจกรรมในวัน
 
   FromCode?: string;        // รหัสสถานที่เริ่มต้น
   ToCode?: string;          // รหัสสถานที่ปลายทาง

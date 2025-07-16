@@ -37,7 +37,7 @@ func (ctrl *TripsController) GetAllTrips(c *gin.Context) {
 		Preload("Con").
 		Preload("Acc").
 		Preload("ShortestPaths", func(db *gorm.DB) *gorm.DB {
-			return db.Order("day, index")
+			return db.Order("day, path_index")
 		}).
 		Find(&trips).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถดึงข้อมูลได้"})
@@ -54,7 +54,7 @@ func (ctrl *TripsController) GetTripByID(c *gin.Context) {
 		Preload("Con").
 		Preload("Acc").
 		Preload("ShortestPaths", func(db *gorm.DB) *gorm.DB {
-			return db.Order("day, index")
+			return db.Order("day, path_index")
 		}).
 		First(&trip, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูลทริป"})
@@ -97,13 +97,11 @@ func (ctrl *TripsController) UpdateTrip(c *gin.Context) {
 func (ctrl *TripsController) DeleteTrip(c *gin.Context) {
 	id := c.Param("id")
 
-	// ลบเส้นทางที่เกี่ยวข้องก่อน
 	if err := ctrl.DB.Where("trip_id = ?", id).Delete(&entity.Shortestpath{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถลบเส้นทางได้"})
 		return
 	}
 
-	// ลบทริป
 	if err := ctrl.DB.Delete(&entity.Trips{}, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถลบทริปได้"})
 		return

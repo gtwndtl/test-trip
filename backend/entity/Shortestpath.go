@@ -11,7 +11,7 @@ type Shortestpath struct {
 	Trip   *Trips `gorm:"foreignKey:TripID"`
 
 	Day   int
-	Index int
+	PathIndex  int
 
 	FromCode string
 	ToCode   string

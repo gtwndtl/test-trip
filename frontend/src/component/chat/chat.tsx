@@ -211,7 +211,7 @@ ${JSON.stringify(routeData.trip_plan, null, 2)}
       const activities = parseTripPlanTextToActivities(tripPlanText);
       console.log('parsed activities:', activities);
 
-let index = 1;
+let PathIndex  = 1;
 
 // เก็บดัชนีการเดินในแต่ละวัน เพื่อ map FromCode/ToCode
 const dayPlanIndices: { [day: number]: number } = {};
@@ -251,7 +251,7 @@ for (const act of activities) {
   const shortestPathData: ShortestpathInterface = {
     TripID: savedTrip.ID,
     Day: act.day,
-    Index: index++,
+    PathIndex : PathIndex++,
     FromCode: fromCode,
     ToCode: toCode,
     Type: 'Activity',

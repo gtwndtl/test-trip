@@ -73,7 +73,7 @@ func (ctrl *ShortestPathController) UpdateShortestPath(c *gin.Context) {
 	// อัปเดตฟิลด์ที่จำเป็น
 	path.TripID = input.TripID
 	path.Day = input.Day
-	path.Index = input.Index
+	path.PathIndex = input.PathIndex 
 	path.FromCode = input.FromCode
 	path.ToCode = input.ToCode
 	path.Type = input.Type
