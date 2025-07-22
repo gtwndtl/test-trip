@@ -17,84 +17,96 @@ type RouteController struct {
 }
 
 type PythonResult struct {
-	Start           string `json:"start"`
-	StartName       string `json:"start_name"`
-	Days            int    `json:"days"` // ถ้ามีข้อมูลจำนวนวันส่งกลับมา
-	TripPlan        []struct {
-		Day               int      `json:"day"`
-		Plan              []string `json:"plan"`
-		Accommodation     string   `json:"accommodation"`
-		AccommodationName string   `json:"accommodation_name"`
-		AccommodationLocation struct {
-			Lat float64 `json:"lat"`
-			Lon float64 `json:"lon"`
-		} `json:"accommodation_location"`
-	} `json:"trip_plan"`
-	Paths           []struct {
-		From       string  `json:"from"`
-		FromName   string  `json:"from_name"`
-		To         string  `json:"to"`
-		ToName     string  `json:"to_name"`
-		DistanceKm float64 `json:"distance_km"`
-		Day        int     `json:"day,omitempty"` // ถ้ามีข้อมูลวันด้วย
-	} `json:"paths"`
-	TotalDistanceKm float64 `json:"total_distance_km"`
-	Message         string  `json:"message"`
-	Error           string  `json:"error,omitempty"`
+	Start           string          `json:"start"`
+	StartName       string          `json:"start_name"`
+	TripPlanByDay   []DayPlan       `json:"trip_plan_by_day"`
+	Paths           []PathInfo      `json:"paths"`
+	TotalDistanceKm float64         `json:"total_distance_km"`
+	Accommodation   *Accommodation  `json:"accommodation,omitempty"`
+	Message         string          `json:"message"`
+	Error           string          `json:"error,omitempty"`
 }
 
+type DayPlan struct {
+	Day  int         `json:"day"`
+	Plan []PlaceInfo `json:"plan"`
+}
+
+type PlaceInfo struct {
+	ID   string  `json:"id"`
+	Name string  `json:"name"`
+	Lat  float64 `json:"lat"`
+	Lon  float64 `json:"lon"`
+}
+
+type PathInfo struct {
+	From       string  `json:"from"`
+	FromName   string  `json:"from_name"`
+	FromLat    float64 `json:"from_lat"`
+	FromLon    float64 `json:"from_lon"`
+	To         string  `json:"to"`
+	ToName     string  `json:"to_name"`
+	ToLat      float64 `json:"to_lat"`
+	ToLon      float64 `json:"to_lon"`
+	DistanceKm float64 `json:"distance_km"`
+	Day        int     `json:"day,omitempty"`
+}
+
+type Accommodation struct {
+	ID   string  `json:"id"`
+	Name string  `json:"name"`
+	Lat  float64 `json:"lat"`
+	Lon  float64 `json:"lon"`
+}
 
 func (rc *RouteController) GenerateRoute(c *gin.Context) {
 	startNode := c.Query("start")
-	daysStr := c.Query("days")
-
-	if startNode == "" || daysStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาระบุ start และ days ผ่าน query parameters"})
+	if startNode == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาระบุ start ผ่าน query parameters"})
 		return
 	}
 
+	daysStr := c.DefaultQuery("days", "1")
 	days, err := strconv.Atoi(daysStr)
-	if err != nil || days <= 0 {
+	if err != nil || days < 1 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "days ต้องเป็นจำนวนเต็มบวก"})
 		return
 	}
 
-	cmd := exec.Command(
-		"python",
-		"Code.py", // ชื่อไฟล์ Python script ของคุณ
-		startNode,
-		daysStr,
-	)
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
+	cmd := exec.Command("python", "Code.py", startNode, daysStr)
 
 	var outBuf, errBuf bytes.Buffer
 	cmd.Stdout = &outBuf
 	cmd.Stderr = &errBuf
 
-	err = cmd.Run()
+	if err := cmd.Run(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("เรียก Python ล้มเหลว: %s, stderr: %s", err.Error(), errBuf.String()),
+		})
+		return
+	}
+
 	output := outBuf.Bytes()
-
-	if err != nil {
+	if len(output) == 0 {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("รัน Python script ไม่ได้: %s, stderr: %s, stdout: %s", err.Error(), errBuf.String(), outBuf.String()),
+			"error": fmt.Sprintf("ไม่ได้รับผลลัพธ์จาก Python เลย\nstderr: %s", errBuf.String()),
 		})
 		return
 	}
 
-	var result PythonResult
-	if err := json.Unmarshal(output, &result); err != nil {
+	var pyResult PythonResult
+	if err := json.Unmarshal(output, &pyResult); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("แปลงผลลัพธ์จาก Python ไม่ได้: %s, output: %s", err.Error(), string(output)),
+			"error": fmt.Sprintf("แปลงผลลัพธ์จาก Python ไม่ได้: %s\nstdout: %s\nstderr: %s",
+				err.Error(), string(output), errBuf.String()),
 		})
 		return
 	}
 
-	if result.Error != "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": result.Error})
+	if pyResult.Error != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": pyResult.Error})
 		return
 	}
 
-	c.JSON(http.StatusOK, result)
+	c.JSON(http.StatusOK, pyResult)
 }

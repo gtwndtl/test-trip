@@ -7,7 +7,6 @@ import (
 
 type AccommodationGis struct {
 	gorm.Model
-	Acc_ID   uint
-	Location string `gorm:"type:geometry(Point,4326)"`
+	Acc_ID   uint     `gorm:"column:acc_id"`
+	Location string  `gorm:"type:geometry(Point,4326)"`
 }
-

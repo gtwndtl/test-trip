@@ -1,7 +1,10 @@
 package Accommodation
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -9,72 +12,226 @@ import (
 )
 
 type AccommodationController struct {
-	DB *gorm.DB
+	MysqlDB   *gorm.DB
+	PostgisDB *gorm.DB
 }
 
-func NewAccommodationController(db *gorm.DB) *AccommodationController {
-	return &AccommodationController{DB: db}
+func NewAccommodationController(db *gorm.DB, gisDB *gorm.DB) *AccommodationController {
+	return &AccommodationController{
+		MysqlDB:    db,
+		PostgisDB: gisDB,
+	}
 }
 
-// POST /accommodations
-func (ctrl *AccommodationController) CreateAccommodation(c *gin.Context) {
-	var accommodation entity.Accommodation
-	if err := c.ShouldBindJSON(&accommodation); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if err := ctrl.DB.Create(&accommodation).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกข้อมูลได้"})
-		return
-	}
-	c.JSON(http.StatusOK, accommodation)
-}
-
-// GET /accommodations
-func (ctrl *AccommodationController) GetAll(c *gin.Context) {
-	var accommodations []entity.Accommodation
-	if err := ctrl.DB.Find(&accommodations).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "เกิดข้อผิดพลาดในการดึงข้อมูล"})
-		return
-	}
-	c.JSON(http.StatusOK, accommodations)
-}
-
-// GET /accommodations/:id
-func (ctrl *AccommodationController) GetByID(c *gin.Context) {
-	id := c.Param("id")
-	var accommodation entity.Accommodation
-	if err := ctrl.DB.First(&accommodation, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูล"})
-		return
-	}
-	c.JSON(http.StatusOK, accommodation)
-}
-
-// PUT /accommodations/:id
-func (ctrl *AccommodationController) Update(c *gin.Context) {
-	id := c.Param("id")
-	var accommodation entity.Accommodation
-	if err := ctrl.DB.First(&accommodation, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบข้อมูล"})
-		return
+// Create Accommodation + GIS
+func (ctl *AccommodationController) Create(c *gin.Context) {
+	var input struct {
+		PlaceID      int       `json:"place_id"`
+		Name         string    `json:"name"`
+		Category     string    `json:"category"`
+		Lat          float64   `json:"lat"`
+		Lon          float64   `json:"lon"`
+		Address      string    `json:"address"`
+		Province     string    `json:"province"`
+		District     string    `json:"district"`
+		SubDistrict  string    `json:"sub_district"`
+		Postcode     string    `json:"postcode"`
+		ThumbnailURL string    `json:"thumbnail_url"`
+		TimeOpen     time.Time `json:"time_open"`
+		TimeClose    time.Time `json:"time_close"`
+		TotalPeople  int       `json:"total_people"`
+		Price        float32   `json:"price"`
+		Review       int       `json:"review"`
 	}
 
-	if err := c.ShouldBindJSON(&accommodation); err != nil {
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctrl.DB.Save(&accommodation)
-	c.JSON(http.StatusOK, accommodation)
-}
+	acc := entity.Accommodation{
+		PlaceID:      input.PlaceID,
+		Name:         input.Name,
+		Category:     input.Category,
+		Lat:          float32(input.Lat),
+		Lon:          float32(input.Lon),
+		Address:      input.Address,
+		Province:     input.Province,
+		District:     input.District,
+		SubDistrict:  input.SubDistrict,
+		Postcode:     input.Postcode,
+		ThumbnailURL: input.ThumbnailURL,
+		Time_open:    input.TimeOpen,
+		Time_close:   input.TimeClose,
+		Total_people: input.TotalPeople,
+		Price:        input.Price,
+		Review:       input.Review,
+	}
 
-// DELETE /accommodations/:id
-func (ctrl *AccommodationController) Delete(c *gin.Context) {
-	id := c.Param("id")
-	if err := ctrl.DB.Delete(&entity.Accommodation{}, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ลบไม่สำเร็จ"})
+	if err := ctl.MysqlDB.Create(&acc).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create accommodation"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "ลบสำเร็จ"})
+
+	wkt := fmt.Sprintf("POINT(%f %f)", input.Lon, input.Lat)
+	if err := ctl.PostgisDB.Exec(
+		"INSERT INTO accommodation_gis (acc_id, location, created_at, updated_at) VALUES (?, ST_GeomFromText(?, 4326), NOW(), NOW())",
+		acc.ID, wkt).Error; err != nil {
+		ctl.MysqlDB.Delete(&acc)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create accommodation GIS"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Accommodation created", "id": acc.ID})
+}
+
+// Get all accommodations + location
+func (ctl *AccommodationController) GetAll(c *gin.Context) {
+	var accs []entity.Accommodation
+	if err := ctl.MysqlDB.Find(&accs).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get accommodations"})
+		return
+	}
+
+	type AccWithLocation struct {
+		entity.Accommodation
+		Location string `json:"location"`
+	}
+
+	var results []AccWithLocation
+	for _, acc := range accs {
+		var location string
+		err := ctl.PostgisDB.Raw(
+			"SELECT ST_AsText(location) FROM accommodation_gis WHERE acc_id = ?", acc.ID).Scan(&location).Error
+		if err != nil {
+			location = ""
+		}
+		results = append(results, AccWithLocation{
+			Accommodation: acc,
+			Location:      location,
+		})
+	}
+
+	c.JSON(http.StatusOK, results)
+}
+
+// Get accommodation by ID
+func (ctl *AccommodationController) GetByID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid accommodation ID"})
+		return
+	}
+
+	var acc entity.Accommodation
+	if err := ctl.MysqlDB.First(&acc, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Accommodation not found"})
+		return
+	}
+
+	var location string
+	if err := ctl.PostgisDB.Raw(
+		"SELECT ST_AsText(location) FROM accommodation_gis WHERE acc_id = ?", id).Scan(&location).Error; err != nil {
+		location = ""
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"accommodation": acc,
+		"location":      location,
+	})
+}
+
+// Update accommodation + GIS
+func (ctl *AccommodationController) Update(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid accommodation ID"})
+		return
+	}
+
+	var input struct {
+		PlaceID      int       `json:"place_id"`
+		Name         string    `json:"name"`
+		Category     string    `json:"category"`
+		Lat          float64   `json:"lat"`
+		Lon          float64   `json:"lon"`
+		Address      string    `json:"address"`
+		Province     string    `json:"province"`
+		District     string    `json:"district"`
+		SubDistrict  string    `json:"sub_district"`
+		Postcode     string    `json:"postcode"`
+		ThumbnailURL string    `json:"thumbnail_url"`
+		TimeOpen     time.Time `json:"time_open"`
+		TimeClose    time.Time `json:"time_close"`
+		TotalPeople  int       `json:"total_people"`
+		Price        float32   `json:"price"`
+		Review       int       `json:"review"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var acc entity.Accommodation
+	if err := ctl.MysqlDB.First(&acc, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Accommodation not found"})
+		return
+	}
+
+	acc.PlaceID = input.PlaceID
+	acc.Name = input.Name
+	acc.Category = input.Category
+	acc.Lat = float32(input.Lat)
+	acc.Lon = float32(input.Lon)
+	acc.Address = input.Address
+	acc.Province = input.Province
+	acc.District = input.District
+	acc.SubDistrict = input.SubDistrict
+	acc.Postcode = input.Postcode
+	acc.ThumbnailURL = input.ThumbnailURL
+	acc.Time_open = input.TimeOpen
+	acc.Time_close = input.TimeClose
+	acc.Total_people = input.TotalPeople
+	acc.Price = input.Price
+	acc.Review = input.Review
+
+	if err := ctl.MysqlDB.Save(&acc).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update accommodation"})
+		return
+	}
+
+	wkt := fmt.Sprintf("POINT(%f %f)", input.Lon, input.Lat)
+	if err := ctl.PostgisDB.Exec(
+		"UPDATE accommodation_gis SET location = ST_GeomFromText(?, 4326), updated_at = NOW() WHERE acc_id = ?",
+		wkt, acc.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update accommodation GIS"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Accommodation updated"})
+}
+
+// Delete accommodation + GIS
+func (ctl *AccommodationController) Delete(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid accommodation ID"})
+		return
+	}
+
+	if err := ctl.PostgisDB.Exec("DELETE FROM accommodation_gis WHERE acc_id = ?", id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete accommodation GIS"})
+		return
+	}
+
+	if err := ctl.MysqlDB.Delete(&entity.Accommodation{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete accommodation"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Accommodation deleted"})
 }

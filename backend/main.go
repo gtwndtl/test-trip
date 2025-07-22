@@ -9,23 +9,25 @@ import (
 	"github.com/gtwndtl/trip-spark-builder/config"
 	"github.com/gtwndtl/trip-spark-builder/controller/Accommodation"
 	"github.com/gtwndtl/trip-spark-builder/controller/Condition"
+	"github.com/gtwndtl/trip-spark-builder/controller/Distance"
+	"github.com/gtwndtl/trip-spark-builder/controller/GenTrip"
+	"github.com/gtwndtl/trip-spark-builder/controller/GroqApi"
 	"github.com/gtwndtl/trip-spark-builder/controller/Landmark"
 	"github.com/gtwndtl/trip-spark-builder/controller/Restaurant"
 	"github.com/gtwndtl/trip-spark-builder/controller/Shortestpath"
 	"github.com/gtwndtl/trip-spark-builder/controller/Trips"
 	"github.com/gtwndtl/trip-spark-builder/controller/User"
-	"github.com/gtwndtl/trip-spark-builder/controller/GenTrip"
-		"github.com/gtwndtl/trip-spark-builder/controller/GroqApi"
 	"github.com/gtwndtl/trip-spark-builder/middlewares"
 )
 
 func main() {
 	// Database setup
 	config.ConnectionDB()
-	db := config.DB()
 	config.SetupDatabase()
-	config.LoadExcelData(db)
-
+	config.LoadExcelData(config.DB())
+	
+	db := config.DB()
+	postgresDB := config.PGDB()
 	r := gin.Default()
 
 	// (ถ้าต้องการเปิด CORS ให้เปิด comment ตามที่ตั้งใจไว้)
@@ -39,11 +41,12 @@ func main() {
 	}))
 
 	// Controller instances
-	accommodationCtrl := Accommodation.NewAccommodationController(db)
+	accommodationCtrl := Accommodation.NewAccommodationController(db, postgresDB)
 	conditionCtrl := Condition.NewConditionController(db)
-	landmarkCtrl := Landmark.NewLandmarkController(db)
-	restaurantCtrl := Restaurant.NewRestaurantController(db)
+	landmarkCtrl := Landmark.NewLandmarkController(db, postgresDB)
+	restaurantCtrl := Restaurant.NewRestaurantController(db, postgresDB)
 	userCtrl := User.NewUserController(db)
+	distanceCtrl := &Distance.DistanceController{MysqlDB: db, PostgisDB: postgresDB,}
 	tripsCtrl := Trips.NewTripsController(db)
 	shortestpathCtrl := Shortestpath.NewShortestPathController(db)
 	routeCtrl := &GenTrip.RouteController{}
@@ -56,7 +59,7 @@ func main() {
 	authorized.Use(middlewares.AuthMiddleware())
 
 	// Accommodation routes (ต้องล็อกอิน)
-	authorized.POST("/accommodations", accommodationCtrl.CreateAccommodation)
+	authorized.POST("/accommodations", accommodationCtrl.Create)
 	r.GET("/accommodations", accommodationCtrl.GetAll)
 	authorized.GET("/accommodations/:id", accommodationCtrl.GetByID)
 	authorized.PUT("/accommodations/:id", accommodationCtrl.Update)
@@ -70,18 +73,18 @@ func main() {
 	authorized.DELETE("/conditions/:id", conditionCtrl.Delete)
 
 	// Landmark routes
-	authorized.POST("/landmarks", landmarkCtrl.CreateLandmark)
-	r.GET("/landmarks", landmarkCtrl.GetAllLandmarks)
-	authorized.GET("/landmarks/:id", landmarkCtrl.GetLandmarkByID)
-	authorized.PUT("/landmarks/:id", landmarkCtrl.UpdateLandmark)
-	authorized.DELETE("/landmarks/:id", landmarkCtrl.DeleteLandmark)
+	authorized.POST("/landmarks", landmarkCtrl.Create)
+	r.GET("/landmarks", landmarkCtrl.GetAll)
+	authorized.GET("/landmarks/:id", landmarkCtrl.GetByID)
+	authorized.PUT("/landmarks/:id", landmarkCtrl.Update)
+	authorized.DELETE("/landmarks/:id", landmarkCtrl.Delete)
 
 	// Restaurant routes
-	authorized.POST("/restaurants", restaurantCtrl.CreateRestaurant)
-	r.GET("/restaurants", restaurantCtrl.GetAllRestaurants)
-	authorized.GET("/restaurants/:id", restaurantCtrl.GetRestaurantByID)
-	authorized.PUT("/restaurants/:id", restaurantCtrl.UpdateRestaurant)
-	authorized.DELETE("/restaurants/:id", restaurantCtrl.DeleteRestaurant)
+	authorized.POST("/restaurants", restaurantCtrl.Create)
+	r.GET("/restaurants", restaurantCtrl.GetAll)
+	authorized.GET("/restaurants/:id", restaurantCtrl.GetByID)
+	authorized.PUT("/restaurants/:id", restaurantCtrl.Update)
+	authorized.DELETE("/restaurants/:id", restaurantCtrl.Delete)
 
 	// User routes (ยกเว้นสร้าง user และ login ที่ public)
 	r.GET("/users", userCtrl.GetAllUsers)
@@ -104,6 +107,7 @@ func main() {
 	authorized.PUT("/shortest-paths/:id", shortestpathCtrl.UpdateShortestPath)
 	authorized.DELETE("/shortest-paths/:id", shortestpathCtrl.DeleteShortestPath)
 
+	r.GET("/distances", distanceCtrl.GetDistances)
     r.GET("/gen-route", routeCtrl.GenerateRoute)
 	r.POST("/api/groq", GroqApi.PostGroq)
 

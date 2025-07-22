@@ -13,8 +13,6 @@ import {
   CreateShortestPath,
 } from '../../services/https';
 
-
-
 // ฟังก์ชัน parse ข้อความแผนทริป LLM เป็น array กิจกรรม {day, startTime, endTime, description}
 function parseTripPlanTextToActivities(text: string) {
   const lines = text
@@ -36,7 +34,7 @@ function parseTripPlanTextToActivities(text: string) {
 
     if (currentDay === 0) continue;
 
-    // ✅ เคส: "08:00 - 09:00 เช็คอินที่ ..."
+    // เคส: "08:00 - 09:00 เช็คอินที่ ..."
     const timeDescInlineMatch = line.match(/^(\d{2}:\d{2})\s*[–\-]\s*(\d{2}:\d{2})\s+(.+)/);
     if (timeDescInlineMatch) {
       const [, startTime, endTime, description] = timeDescInlineMatch;
@@ -44,7 +42,7 @@ function parseTripPlanTextToActivities(text: string) {
       continue;
     }
 
-    // ✅ เคส: "08:00 - 09:00" + บรรทัดต่อไปเป็นคำอธิบาย
+    // เคส: "08:00 - 09:00" + บรรทัดถัดไปเป็นคำอธิบาย
     const timeOnlyMatch = line.match(/^(\d{2}:\d{2})\s*[–\-]\s*(\d{2}:\d{2})$/);
     if (timeOnlyMatch && i + 1 < lines.length) {
       const startTime = timeOnlyMatch[1];
@@ -55,7 +53,7 @@ function parseTripPlanTextToActivities(text: string) {
       continue;
     }
 
-    // ✅ เคสพิเศษ: "20:00 เป็นต้นไป พักผ่อนที่ ..." → แปลงเป็น 20:00–21:00
+    // เคสพิเศษ: "20:00 เป็นต้นไป พักผ่อนที่ ..." → แปลงเป็น 20:00–21:00
     const singleLineSpecial = line.match(/^(\d{2}:\d{2})\s+(.+)/);
     if (singleLineSpecial) {
       const [_, startTime, description] = singleLineSpecial;
@@ -163,7 +161,7 @@ const Chat = () => {
 ด้านล่างคือข้อมูลเส้นทางระหว่างสถานที่ (paths) และแผนรายวัน (trip_plan):
 ${JSON.stringify(routeData.paths, null, 2)}
 
-${JSON.stringify(routeData.trip_plan, null, 2)}
+${JSON.stringify(routeData.trip_plan_by_day, null, 2)}
 
 กรุณาจัดแผนทริปให้ครบทั้ง ${days} วัน โดยมีรายละเอียดดังนี้:
 
@@ -198,7 +196,7 @@ ${JSON.stringify(routeData.trip_plan, null, 2)}
         Types: 'custom',
         Days: days,
         Con_id: 1,
-        Acc_id: routeData.accommodation ?? null,
+        Acc_id: parseInt(routeData.accommodation?.id ?? '0', 10),
       };
       console.log('Payload to create trip:', newTrip);
 
@@ -211,70 +209,119 @@ ${JSON.stringify(routeData.trip_plan, null, 2)}
       const activities = parseTripPlanTextToActivities(tripPlanText);
       console.log('parsed activities:', activities);
 
-let PathIndex  = 1;
+      let PathIndex = 1;
 
-// เก็บดัชนีการเดินในแต่ละวัน เพื่อ map FromCode/ToCode
-const dayPlanIndices: { [day: number]: number } = {};
+      // เก็บดัชนีการเดินในแต่ละวัน เพื่อ map FromCode/ToCode
+      const dayPlanIndices: { [day: number]: number } = {};
 
-for (const act of activities) {
-  // หาแผนของวันนั้น
-  const dayPlan = routeData.trip_plan.find((d: { day: number; }) => d.day === act.day);
-  if (!dayPlan) {
-    console.warn(`ไม่พบแผนสำหรับวัน ${act.day}`);
-    continue;
+      for (const act of activities) {
+        // หาแผนของวันนั้น
+        if (!routeData.trip_plan_by_day || !Array.isArray(routeData.trip_plan_by_day)) {
+          console.error('routeData.trip_plan_by_day is missing or not an array:', routeData.trip_plan_by_day);
+          return; // หรือจัดการ error ตามเหมาะสม
+        }
+
+        const dayPlan = routeData.trip_plan_by_day.find((d: { day: number }) => d.day === act.day);
+        if (!dayPlan) {
+          console.warn(`ไม่พบแผนสำหรับวัน ${act.day}`);
+          continue;
+        }
+
+        const accommodationCode = routeData.accommodation?.id || 'A1';
+
+        const currentIndex = dayPlanIndices[act.day] ?? 0;
+
+        let fromCode = '';
+        let toCode = '';
+        console.log(`วัน ${act.day}: currentIndex=${currentIndex}, plan.length=${dayPlan.plan?.length}`);
+// กรณีกิจกรรมเช็คอินที่ที่พัก (เริ่มวัน) ให้ fromCode = toCode = ที่พัก
+if (/เช็คอิน/.test(act.description)) {
+  fromCode = accommodationCode;
+  toCode = accommodationCode;
+}
+// กรณีกิจกรรมเช็คเอาท์และเดินทางกลับ (จบวันสุดท้าย) ให้ fromCode = จุดสุดท้ายในแผน, toCode = ที่พัก
+else if (/เช็คเอาท์/.test(act.description)) {
+  if (dayPlan.plan && dayPlan.plan.length > 0) {
+    fromCode = dayPlan.plan[dayPlan.plan.length - 1].id; // จุดสุดท้ายในแผน
+  } else {
+    fromCode = accommodationCode; // fallback
   }
-
-  const accommodationCode = dayPlan.accommodation || 'A1'; // รหัสที่พักของวัน
-
-  // ดัชนีกิจกรรมในวันนี้ (เริ่ม 0)
-  const currentIndex = dayPlanIndices[act.day] ?? 0;
-
-  let fromCode = '';
-  let toCode = '';
-
-  // เช็คกิจกรรมประเภทเช็คอิน, พักผ่อน, เช็คเอาท์
-  if (/เช็คอิน|พักผ่อน|เช็คเอาท์/.test(act.description)) {
+  toCode = accommodationCode;
+}
+// กรณีกิจกรรมพักผ่อนที่ที่พัก (เช่น "พักผ่อนที่ ...") ให้ fromCode = จุดก่อนหน้า, toCode = ที่พัก
+else if (/พักผ่อน/.test(act.description)) {
+ if (dayPlan.plan && dayPlan.plan.length > 0) {
+    fromCode = dayPlan.plan[dayPlan.plan.length - 1].id; // จุดสุดท้ายในแผน
+  } else {
+    fromCode = accommodationCode; // fallback
+  }
+  toCode = accommodationCode;
+}
+// กรณีทั่วไป (กิจกรรมระหว่างวัน) กำหนด fromCode และ toCode จากแผน
+else {
+  if (
+    dayPlan.plan &&
+    dayPlan.plan.length > 0
+  ) {
+    if (currentIndex === 0) {
+      fromCode = accommodationCode;
+      toCode = dayPlan.plan[0].id;
+    } else if (
+      currentIndex > 0 &&
+      currentIndex < dayPlan.plan.length
+    ) {
+      fromCode = dayPlan.plan[currentIndex - 1].id;
+      toCode = dayPlan.plan[currentIndex].id;
+    } else {
+      // fallback กรณี index เกินขอบเขต
+      fromCode = accommodationCode;
+      toCode = accommodationCode;
+    }
+  } else {
+    // fallback กรณีไม่มีแผน
     fromCode = accommodationCode;
     toCode = accommodationCode;
-  } else {
-    // กิจกรรมอื่น ๆ ใน trip_plan.plan
-    if (currentIndex === 0) {
-      // กิจกรรมแรกของวัน จากที่พักไปสถานที่แรก
-      fromCode = accommodationCode;
-      toCode = dayPlan.plan[0];
-    } else {
-      fromCode = dayPlan.plan[currentIndex - 1];
-      toCode = dayPlan.plan[currentIndex];
-    }
-  }
-  
-  const shortestPathData: ShortestpathInterface = {
-    TripID: savedTrip.ID,
-    Day: act.day,
-    PathIndex : PathIndex++,
-    FromCode: fromCode,
-    ToCode: toCode,
-    Type: 'Activity',
-    Distance: 0,
-    ActivityDescription: act.description,
-    StartTime: act.startTime,
-    EndTime: act.endTime,
-  };
-
-  try {
-    const spRes = await CreateShortestPath(shortestPathData);
-    console.log('CreateShortestPath success:', spRes);
-  } catch (err) {
-    console.error('CreateShortestPath failed:', err, 'with data:', shortestPathData);
-  }
-
-  if (!/เช็คอิน|พักผ่อน|เช็คเอาท์/.test(act.description)) {
-    // เพิ่มดัชนีเฉพาะกิจกรรมใน trip_plan.plan
-    dayPlanIndices[act.day] = currentIndex + 1;
   }
 }
 
+        // หา distance จาก routeData.paths
+        const path = routeData.paths.find(
+          (p: { from: string; to: string }) =>
+            (p.from === fromCode && p.to === toCode) || (p.from === toCode && p.to === fromCode)
+        );
 
+        const distance = path ? path.distance_km : 0;
+
+        const shortestPathData: ShortestpathInterface = {
+          TripID: savedTrip.ID,
+          Day: act.day,
+          PathIndex: PathIndex++,
+          FromCode: fromCode,
+          ToCode: toCode,
+          Type: 'Activity',
+          Distance: distance,
+          ActivityDescription: act.description,
+          StartTime: act.startTime,
+          EndTime: act.endTime,
+        };
+
+        try {
+          const spRes = await CreateShortestPath(shortestPathData);
+          console.log('CreateShortestPath success:', spRes);
+        } catch (err) {
+          console.error('CreateShortestPath failed:', err, 'with data:', shortestPathData);
+        }
+
+        if (!/เช็คอิน|เช็คเอาท์/.test(act.description)) {
+          if (currentIndex + 1 < dayPlan.plan.length) {
+            dayPlanIndices[act.day] = currentIndex + 1;
+          } else {
+            console.log(`วัน ${act.day}: currentIndex ถึงขีดจำกัดแล้ว (${currentIndex + 1} >= ${dayPlan.plan.length})`);
+            // ไม่เพิ่ม index เพราะเกินขอบเขต
+          }
+        }
+
+      }
     } catch (error) {
       console.error('Error generating route or calling Groq', error);
       setMessages((prev) => [

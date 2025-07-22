@@ -6,6 +6,6 @@ import (
 
 type LandmarkGis struct {
 	gorm.Model
-	LandmarkID uint
-	Location   string `gorm:"type:geometry(Point,4326)"`
+	LandmarkID uint     `gorm:"column:landmark_id"`
+	Location   string  `gorm:"type:geometry(Point,4326)"`
 }
