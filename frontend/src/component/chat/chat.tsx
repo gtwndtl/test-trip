@@ -204,7 +204,8 @@ ${JSON.stringify(routeData.trip_plan_by_day, null, 2)}
       const savedTrip = await CreateTrip(newTrip);
       console.log('บันทึก Trip สำเร็จ:', savedTrip);
       setMessages((prev) => [...prev, { text: `บันทึกทริปสำเร็จ! (ID: ${savedTrip.ID})`, sender: 'bot' }]);
-
+      localStorage.setItem('TripID', savedTrip.ID!.toString());
+      
       // แปลงข้อความแผนทริปเป็นกิจกรรม
       const activities = parseTripPlanTextToActivities(tripPlanText);
       console.log('parsed activities:', activities);
