@@ -13,6 +13,7 @@ import {
   CreateShortestPath,
 } from '../../services/https';
 
+
 // ฟังก์ชัน parse ข้อความแผนทริป LLM เป็น array กิจกรรม {day, startTime, endTime, description}
 function parseTripPlanTextToActivities(text: string) {
   const lines = text
@@ -109,6 +110,11 @@ const formatTripPlanText = (text: string) => {
 };
 
 const Chat = () => {
+  const [suggestedPlaces, setSuggestedPlaces] = useState<LandmarkInterface[]>([]);
+const [awaitingUserSelection, setAwaitingUserSelection] = useState(false);
+const [selectedPlace, setSelectedPlace] = useState<LandmarkInterface | null>(null);
+const [awaitingConfirm, setAwaitingConfirm] = useState(false);
+
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState<
     { text: string; sender: 'user' | 'bot'; data?: any; isTripPlan?: boolean }[]
@@ -333,66 +339,169 @@ else {
       setLoading(false);
     }
   };
+  
 
-  const handleUserMessage = async (userMessage: string) => {
-    if (!userMessage.trim()) return;
-    setMessages((prev) => [...prev, { text: userMessage, sender: 'user' }]);
-    console.log('handleUserMessage รับข้อความ:', userMessage);
+const [selectedPlaceDays, setSelectedPlaceDays] = useState<number | null>(null);
 
-    const lastConfirm = [...messages]
-      .reverse()
-      .find((m) => m.sender === 'bot' && m.data && m.data.id && !m.data.days);
+const [awaitingDays, setAwaitingDays] = useState(false);
 
-    if (lastConfirm) {
-      const days = parseInt(userMessage.replace(/[^\d]/g, ''), 10);
-      if (!isNaN(days) && days > 0) {
-        console.log('วิเคราะห์ข้อความ (confirm):', { keyword: lastConfirm.data.keyword, days });
-        generateRouteAndPlan(lastConfirm.data.id, lastConfirm.data.keyword, days);
-        return;
+
+
+const handleUserMessage = async (userMessage: string) => {
+  setMessages((prev) => [...prev, { text: userMessage, sender: 'user' }]);
+  const msg = userMessage.trim();
+
+  // กรณีรอเลือกสถานที่จาก list
+  if (awaitingUserSelection) {
+    const matched = suggestedPlaces.find(p => p.Name === msg);
+    if (matched) {
+      setSelectedPlace(matched);
+      setAwaitingConfirm(true);
+      setAwaitingUserSelection(false);
+      setMessages((prev) => [...prev, { text: `คุณต้องการเลือกสถานที่ "${matched.Name}" ใช่ไหมคะ? (ตอบ ใช่ / ไม่)`, sender: 'bot' }]);
+    } else {
+      const idx = parseInt(msg, 10) - 1;
+      if (!isNaN(idx) && idx >= 0 && idx < suggestedPlaces.length) {
+        const place = suggestedPlaces[idx];
+        setSelectedPlace(place);
+        setAwaitingConfirm(true);
+        setAwaitingUserSelection(false);
+        setMessages((prev) => [...prev, { text: `คุณต้องการเลือกสถานที่ "${place.Name}" ใช่ไหมคะ? (ตอบ ใช่ / ไม่)`, sender: 'bot' }]);
       } else {
-        setMessages((prev) => [
+        setMessages((prev) => [...prev, { text: `กรุณาพิมพ์ชื่อสถานที่ที่ต้องการ หรือพิมพ์เลขที่ถูกต้องจากรายการ เช่น 1 ถึง ${suggestedPlaces.length}`, sender: 'bot' }]);
+      }
+    }
+    return;
+  }
+// กรณีรอ confirm สถานที่
+if (awaitingConfirm) {
+  const normalizedMsg = msg.toLowerCase().trim();
+  if (normalizedMsg.startsWith('ใช่')) {
+    if (selectedPlace && selectedPlaceDays !== null) {
+      generateRouteAndPlan(selectedPlace.ID!, selectedPlace.Name!, selectedPlaceDays);
+      setAwaitingConfirm(false);
+      setSelectedPlace(null);
+      setSelectedPlaceDays(null);
+      setAwaitingDays(false);
+    } else {
+      setAwaitingConfirm(false);  // เพิ่มตรงนี้เพื่อเคลียร์สถานะ confirm
+      setAwaitingDays(true);
+      setMessages((prev) => [...prev, { text: `คุณต้องการไป "${selectedPlace?.Name}" กี่วันคะ? กรุณาพิมพ์จำนวนวันเป็นตัวเลข`, sender: 'bot' }]);
+    }
+  } else if (normalizedMsg.startsWith('ไม่')) {
+    setMessages((prev) => [...prev, { text: 'โอเคค่ะ กรุณาพิมพ์คำค้นใหม่อีกครั้งนะคะ', sender: 'bot' }]);
+    setAwaitingConfirm(false);
+    setSelectedPlace(null);
+    setSelectedPlaceDays(null);
+  } else {
+    setMessages((prev) => [...prev, { text: 'กรุณาตอบ "ใช่" หรือ "ไม่" ค่ะ', sender: 'bot' }]);
+  }
+  return;
+}
+
+if (awaitingDays) {
+  const daysOnly = msg.replace(/[^\d]/g, '');
+  const daysNum = parseInt(daysOnly, 10);
+
+  if (!isNaN(daysNum) && daysNum > 0) {
+    setSelectedPlaceDays(daysNum);
+    if (selectedPlace) {
+      generateRouteAndPlan(selectedPlace.ID!, selectedPlace.Name!, daysNum);
+      setAwaitingDays(false);
+      setAwaitingConfirm(false);  // เคลียร์ confirm ด้วยในกรณีนี้ด้วย
+      setSelectedPlace(null);
+      setSelectedPlaceDays(null);
+    } else {
+      setMessages((prev) => [...prev, { text: 'เกิดข้อผิดพลาด กรุณาเลือกสถานที่ใหม่อีกครั้ง', sender: 'bot' }]);
+    }
+  } else {
+    setMessages((prev) => [...prev, { text: 'กรุณาพิมพ์จำนวนวันเป็นตัวเลขที่ถูกต้องค่ะ', sender: 'bot' }]);
+  }
+  return;
+}
+
+
+
+  // กรณีข้อความปกติ (วิเคราะห์ keyword + วัน)
+  const analysis = extractKeywordAndDays(msg);
+
+  if (analysis?.keyword) {
+    setAwaitingDays(false);
+    setAwaitingConfirm(false);
+    setAwaitingUserSelection(false);
+    setSelectedPlace(null);
+    setSelectedPlaceDays(null);
+
+    try {
+      setLoading(true);
+      const landmarkNames = landmarks.map(l => l.Name).join(', ');
+      const prompt = `
+คุณคือผู้ช่วยแนะนำสถานที่ท่องเที่ยวในระบบของเรา
+
+สถานที่ที่เรามีในระบบมีดังนี้:
+${landmarkNames}
+
+โปรดแนะนำสถานที่ที่ใกล้เคียงหรือเกี่ยวข้องกับคำว่า "${analysis.keyword}"
+
+**โปรดตอบเป็น JSON array ของชื่อสถานที่เท่านั้น เช่น ["วัดพระแก้ว", "วัดอรุณ"]**
+อย่าตอบข้อความอื่นหรือบรรยาย เอาแค่ 5 ชื่อ
+`;
+
+      const groqRes = await PostGroq(prompt);
+      let placeNamesFromLLM: string[] = [];
+      try {
+        placeNamesFromLLM = JSON.parse(groqRes.choices[0].message.content);
+      } catch (e) {
+        console.error('แปลง JSON ผิดพลาด:', e);
+      }
+
+      const matchedLandmarks = landmarks.filter(l => placeNamesFromLLM.some(name => l.Name?.includes(name)));
+
+      if (matchedLandmarks.length > 1) {
+        setSuggestedPlaces(matchedLandmarks);
+        setAwaitingUserSelection(true);
+        if (typeof analysis.days === 'number' && analysis.days > 0) {
+          setSelectedPlaceDays(analysis.days);  // <-- เก็บจำนวนวันที่ extract ได้ตั้งแต่ต้น
+        } else {
+          setSelectedPlaceDays(null);
+        }
+        setMessages(prev => [
           ...prev,
           {
-            text: 'กรุณาพิมพ์จำนวนวันเป็นตัวเลข เช่น 3',
+            text: `จาก "${analysis.keyword}" เราพบสถานที่ใกล้เคียงดังนี้:\n${matchedLandmarks.map((l, i) => `${i + 1}. ${l.Name}`).join('\n')}\nกรุณาพิมพ์เลขที่สถานที่ที่คุณต้องการเลือกค่ะ`,
             sender: 'bot',
-          },
+          }
         ]);
         return;
       }
-    }
-
-    const analysis = extractKeywordAndDays(userMessage);
-    console.log('วิเคราะห์ข้อความ:', analysis);
-    if (analysis?.keyword) {
-      const keyword = analysis.keyword.toLowerCase();
-      const matched = landmarks.find((l) => l.Name?.toLowerCase().includes(keyword));
-
-      if (matched && matched.ID != null) {
-        if (analysis.days) {
-          generateRouteAndPlan(matched.ID, analysis.keyword, analysis.days);
+      if (matchedLandmarks.length === 1) {
+        const matched = matchedLandmarks[0];
+        setSelectedPlace(matched);
+        if (typeof analysis.days === 'number' && analysis.days > 0) {
+          setSelectedPlaceDays(analysis.days);
+          generateRouteAndPlan(matched.ID!, analysis.keyword, analysis.days);
         } else {
-          setMessages(() => [
-            {
-              text: `คุณต้องการไป "${analysis.keyword}" กี่วันคะ? กรุณาพิมพ์จำนวนวันเป็นตัวเลข`,
-              sender: 'bot',
-              data: { keyword: analysis.keyword, id: matched.ID, days: null },
-            },
-          ]);
+          setAwaitingDays(true);
+          setMessages(prev => [...prev, { text: `คุณต้องการไป "${matched.Name}" กี่วันคะ? กรุณาพิมพ์จำนวนวันเป็นตัวเลข`, sender: 'bot' }]);
         }
-      } else {
-        setMessages((prev) => [...prev, { text: `ไม่พบสถานที่ "${analysis.keyword}"`, sender: 'bot' }]);
+        return;
       }
-      return;
+      setMessages(prev => [...prev, { text: `ไม่พบสถานที่ที่เกี่ยวข้องกับ "${analysis.keyword}" ในระบบของเรา ลองพิมพ์คำค้นใหม่ดูนะคะ`, sender: 'bot' }]);
+    } catch (error) {
+      console.error(error);
+      setMessages(prev => [...prev, { text: 'เกิดข้อผิดพลาดในการค้นหาสถานที่ กรุณาลองใหม่', sender: 'bot' }]);
+    } finally {
+      setLoading(false);
     }
+    return;
+  }
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        text: 'ขอบคุณสำหรับข้อความค่ะ หากต้องการวางแผนทริป พิมพ์ว่า "ฉันอยากไป..." พร้อมจำนวนวัน',
-        sender: 'bot',
-      },
-    ]);
-  };
+  // ข้อความอื่นๆ ทั่วไป
+  setMessages(prev => [...prev, { text: 'ขอบคุณสำหรับข้อความค่ะ หากต้องการวางแผนทริป พิมพ์ว่า "ฉันอยากไป..." พร้อมจำนวนวัน', sender: 'bot' }]);
+};
+
+
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
