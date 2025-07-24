@@ -96,7 +96,7 @@ func main() {
 	// Trips routes
 	r.POST("/trips", tripsCtrl.CreateTrip)
 	authorized.GET("/trips", tripsCtrl.GetAllTrips)
-	authorized.GET("/trips/:id", tripsCtrl.GetTripByID)
+	r.GET("/trips/:id", tripsCtrl.GetTripByID)
 	authorized.PUT("/trips/:id", tripsCtrl.UpdateTrip)
 	authorized.DELETE("/trips/:id", tripsCtrl.DeleteTrip)
 
@@ -108,6 +108,7 @@ func main() {
 	authorized.DELETE("/shortest-paths/:id", shortestpathCtrl.DeleteShortestPath)
 
 	r.GET("/distances", distanceCtrl.GetDistances)
+	r.GET("/mst", distanceCtrl.GetMST)
     r.GET("/gen-route", routeCtrl.GenerateRoute)
 	r.POST("/api/groq", GroqApi.PostGroq)
 

@@ -5,33 +5,33 @@ import heapq
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-def prim_mst(graph, nodes):
-    if not nodes:
-        return []
+# def prim_mst(graph, nodes):
+#     if not nodes:
+#         return []
 
-    mst_edges = []
-    visited = set()
-    min_heap = []
+#     mst_edges = []
+#     visited = set()
+#     min_heap = []
 
-    start = nodes[0]
-    visited.add(start)
+#     start = nodes[0]
+#     visited.add(start)
 
-    for to, dist in graph.get(start, []):
-        if to in nodes:
-            heapq.heappush(min_heap, (dist, start, to))
+#     for to, dist in graph.get(start, []):
+#         if to in nodes:
+#             heapq.heappush(min_heap, (dist, start, to))
 
-    while min_heap and len(visited) < len(nodes):
-        dist, frm, to = heapq.heappop(min_heap)
-        if to in visited:
-            continue
-        visited.add(to)
-        mst_edges.append((frm, to, dist))
+#     while min_heap and len(visited) < len(nodes):
+#         dist, frm, to = heapq.heappop(min_heap)
+#         if to in visited:
+#             continue
+#         visited.add(to)
+#         mst_edges.append((frm, to, dist))
 
-        for nxt, ndist in graph.get(to, []):
-            if nxt not in visited and nxt in nodes:
-                heapq.heappush(min_heap, (ndist, to, nxt))
+#         for nxt, ndist in graph.get(to, []):
+#             if nxt not in visited and nxt in nodes:
+#                 heapq.heappush(min_heap, (ndist, to, nxt))
 
-    return mst_edges
+#     return mst_edges
 
 
 def calculate_centroid(places):
@@ -72,6 +72,30 @@ def find_nearest_accommodation(accommodations, centroid_lat, centroid_lon):
             nearest = acc
     return nearest
 
+def fetch_mst_from_api(start_id, max_dist=5000):
+    url = f"http://localhost:8080/mst?root={int(start_id[1:])}&maxdist={max_dist}"
+    try:
+        resp = requests.get(url)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch MST: {e}", file=sys.stderr)
+        return []
+
+def build_mst_adj_from_api(mst_edges):
+    from collections import defaultdict
+    mst_adj = defaultdict(list)
+    for edge in mst_edges:
+        pred = f"P{edge['Pred']}"
+        node = f"P{edge['Node']}"
+        if edge['EdgeID'] == -1:
+            continue  # ข้าม root ตัวแรก
+        mst_adj[pred].append(node)
+        mst_adj[node].append(pred)
+    return mst_adj
+
+
+
 
 def plan_trip(start_id, landmarks, restaurants, graph, accommodations, days=1):
     p_list = [p['id'] for p in landmarks if p['id'] != start_id]
@@ -81,12 +105,13 @@ def plan_trip(start_id, landmarks, restaurants, graph, accommodations, days=1):
     place_lookup = {p['id']: p for p in all_places}
 
     p_nodes = [start_id] + p_list
-    mst_edges = prim_mst(graph, p_nodes)
+    mst_edges  = fetch_mst_from_api(start_id)
+    mst_adj = build_mst_adj_from_api(mst_edges )
 
-    mst_adj = {node: [] for node in p_nodes}
-    for frm, to, dist in mst_edges:
-        mst_adj[frm].append(to)
-        mst_adj[to].append(frm)
+    for edge in mst_edges:
+        # print(edge)
+        frm = f"P{edge['Pred']}"
+        to = f"P{edge['Node']}"
 
     visited = set()
     remaining_r = set(r_list)
@@ -252,6 +277,18 @@ def build_graph(distance_data):
             graph[from_node].append((to_id, dist))
     return graph
 
+def load_distances_for_ids(ids):
+    ids_param = ",".join(ids)
+    url = f"http://localhost:8080/distances?ids={ids_param}"
+    try:
+        resp = requests.get(url)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        print(f"[ERROR] Load distances failed: {e}", file=sys.stderr)
+        return {}
+
+
 
 def main():
     if len(sys.argv) < 2:
@@ -271,18 +308,24 @@ def main():
     accommodations = load_data("http://localhost:8080/accommodations", "A")
     print(f"[DEBUG] Loaded {len(accommodations)} accommodations", file=sys.stderr)
 
-    try:
-        distance_data = requests.get("http://localhost:8080/distances").json()
-        print(f"[DEBUG] Loaded distance data", file=sys.stderr)
-    except Exception as e:
-        print(f"[ERROR] Load distances failed: {e}", file=sys.stderr)
-        return
+    # รวม id ทั้งหมดที่ต้องการ
+    all_ids = set()
+    all_ids.add(start_id)
+    for p in landmarks:
+        all_ids.add(p['id'])
+    for r in restaurants:
+        all_ids.add(r['id'])
+    for a in accommodations:
+        all_ids.add(a['id'])
+
+    # โหลดระยะทางเฉพาะจุดที่ใช้จริง
+    distance_data = load_distances_for_ids(list(all_ids))
+    print(f"[DEBUG] Loaded filtered distance data", file=sys.stderr)
 
     graph = build_graph(distance_data)
     result = plan_trip(start_id, landmarks, restaurants, graph, accommodations, days)
 
     print(json.dumps(result, ensure_ascii=False))
-
 
 if __name__ == "__main__":
     main()
