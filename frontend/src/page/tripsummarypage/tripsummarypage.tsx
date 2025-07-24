@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import Navbar from '../../navbar/navbar';
 import './tripsummarypage.css';
 import { GetTripById } from '../../services/https';
-import type { TripInterface, ShortestpathInterface } from '../../interfaces/Trips';
+import type { TripInterface } from '../../interfaces/Trips';
+import type { ShortestpathInterface } from '../../interfaces/Shortestpath';
 
 const TripSummaryPage = () => {
   const TripID = localStorage.getItem('TripID') ?? '';
