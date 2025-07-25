@@ -63,12 +63,12 @@ const Navbar = () => {
 
   const dropdownItems = isLoggedIn
     ? [
-        { label: 'Setting', key: 'setting' },
-        { label: 'Logout', key: 'logout' },
-      ]
+      { label: 'Setting', key: 'setting' },
+      { label: 'Logout', key: 'logout' },
+    ]
     : [
-        { label: 'Login', key: 'login' },
-      ];
+      { label: 'Login', key: 'login' },
+    ];
 
   return (
     <div className="navbar-container">
@@ -88,9 +88,9 @@ const Navbar = () => {
 
       <div className="navbar-menu">
         <div className="navbar-user">
-          {!isLoggedIn && 'Guest'}
-          {isLoggedIn && !userData && 'Loading...'}
-          {isLoggedIn && userData && `${userData.Firstname} ${userData.Lastname}`}
+          {!isLoggedIn && 'Welcome, Guest'}
+          {isLoggedIn && !userData && 'Loading profile...'}
+          {isLoggedIn && userData && `Welcome, ${userData.Firstname}`}
         </div>
         <Dropdown
           menu={{ items: dropdownItems, onClick: handleDropdownClick }}
