@@ -43,7 +43,7 @@ const Navbar = () => {
   const handleLogout = () => {
     localStorage.clear();
     setUserData(null);
-    navigate('/home');
+    navigate('/');
   };
 
   const dropdownItems = isLoggedIn
