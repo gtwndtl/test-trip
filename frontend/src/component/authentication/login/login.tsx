@@ -27,9 +27,9 @@ const LoginPage = ({ onSwitch, isFirstRender }: { onSwitch: () => void; isFirstR
                 localStorage.setItem('token_type', result.token_type);
                 localStorage.setItem('id', result.id.toString());
                 console.log("Token", result.token);
-                navigate('/home');
+                navigate('/');
                 alert("Login successful"); // เปลี่ยนเป็น alert ดูว่าแสดงไหม
-                console.log("Navigating to /home");
+                console.log("Navigating to /");
             } else {
                 message.error("Invalid login response");
             }
