@@ -1,0 +1,27 @@
+.setting-container {
+    width: 100vw;
+    height: 100vh;
+}
+
+.setting-content {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.setting-section {
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(235, 235, 235);
+    height: 90vh;
+    width: 70vw;
+    padding: 20px;
+    margin-top: 10px;
+    border-radius: 32px;
+}
+
+.setting-account-section{
+    background-color: whitesmoke;
+    padding: 20px;
+    border-radius: 16px;
+}
