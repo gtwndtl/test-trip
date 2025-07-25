@@ -21,9 +21,8 @@ const Navbar = () => {
   useEffect(() => {
     const id = localStorage.getItem('id');
     const loginState = localStorage.getItem('isLogin') === 'true';
-
     setUserID(id);
-    setIsLoggedIn(loginState);
+    setIsLoggedIn(loginState);  
   }, []);
 
   // Fetch user data if logged in
@@ -91,7 +90,6 @@ const Navbar = () => {
   return (
     <div className="navbar-container">
       <div className="navbar-title">Trip Planner</div>
-
       <div className="navbar-link">
         {navLinks.map(({ label, path }) => (
           <div
