@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CloseOutlined, DownOutlined, UserOutlined } from '@ant-design/icons';
 import { Dropdown, Modal } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
+
 import Authentication from '../component/authentication/authentication/authentication';
 import { GetUserById } from '../services/https';
 import type { UserInterface } from '../interfaces/User';
@@ -10,17 +11,29 @@ import './navbar.css';
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const userID = localStorage.getItem('id');
-  const isLoggedIn = localStorage.getItem('isLogin') === 'true';
 
-  const [openModal, setOpenModal] = useState(false);
+  //ใช้ state เพื่อโหลดค่าจาก localStorage
+  const [userID, setUserID] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState<UserInterface | null>(null);
+  const [openModal, setOpenModal] = useState(false);
 
+  useEffect(() => {
+    //โหลดค่า login state และ userID จาก localStorage
+    setUserID(localStorage.getItem('id'));
+    setIsLoggedIn(localStorage.getItem('isLogin') === 'true');
+  }, []);
+
+  //โหลดข้อมูลผู้ใช้เมื่อพร้อม
   useEffect(() => {
     const fetchUserData = async () => {
       if (userID && isLoggedIn) {
-        const user = await GetUserById(Number(userID));
-        setUserData(user);
+        try {
+          const user = await GetUserById(Number(userID));
+          setUserData(user);
+        } catch (error) {
+          console.error('Error fetching user:', error);
+        }
       }
     };
     fetchUserData();
@@ -42,18 +55,20 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.clear();
+    setUserID(null);
+    setIsLoggedIn(false);
     setUserData(null);
     navigate('/');
   };
 
   const dropdownItems = isLoggedIn
     ? [
-      { label: 'Setting', key: 'setting' },
-      { label: 'Logout', key: 'logout' },
-    ]
+        { label: 'Setting', key: 'setting' },
+        { label: 'Logout', key: 'logout' },
+      ]
     : [
-      { label: 'Login', key: 'login' },
-    ];
+        { label: 'Login', key: 'login' },
+      ];
 
   return (
     <div className="navbar-container">
@@ -73,11 +88,9 @@ const Navbar = () => {
 
       <div className="navbar-menu">
         <div className="navbar-user">
-          {isLoggedIn
-            ? userData
-              ? `${userData.Firstname} ${userData.Lastname}`
-              : 'Loading...'
-            : 'Guest'}
+          {!isLoggedIn && 'Guest'}
+          {isLoggedIn && !userData && 'Loading...'}
+          {isLoggedIn && userData && `${userData.Firstname} ${userData.Lastname}`}
         </div>
         <Dropdown
           menu={{ items: dropdownItems, onClick: handleDropdownClick }}
