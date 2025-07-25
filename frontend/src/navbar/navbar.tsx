@@ -1,6 +1,6 @@
 import { Dropdown, Modal } from 'antd';
 import {
-  CloseCircleOutlined,
+  CloseOutlined,
   MenuOutlined,
   QuestionCircleOutlined,
   UserOutlined,
@@ -42,7 +42,7 @@ const Navbar = () => {
         onCancel={() => setOpen(false)}
         footer={null}
         width={800}
-        closeIcon={<CloseCircleOutlined />}
+        closeIcon={<CloseOutlined />}
         className="custom-modal"
         styles={{
           body: {

@@ -34,8 +34,8 @@
 }
 
 .custom-modal .ant-modal-close {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   top: 26px;
   right: 30px;
   border-radius: 50%;
@@ -48,6 +48,6 @@
 }
 
 .custom-modal .ant-modal-close svg {
-  font-size: 20px;
+  font-size: 10px;
   color: #000000;
 }

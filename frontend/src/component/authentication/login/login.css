@@ -19,6 +19,8 @@
     background-image: url('../../../assets/night.jpg');
     background-size: cover;
     background-position: center;
+    margin: 20px;
+    border-radius: 16px;
 }
 
 .login-form,
