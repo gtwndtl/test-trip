@@ -65,9 +65,7 @@ const TripSummaryPage = () => {
 
   return (
     <div className="trip-summary-page-container">
-      <div className="navbar-container">
         <Navbar />
-      </div>
       <div className="trip-summary-page-content">
         <h2 className="trip-summary-title">สรุปแผนการเดินทาง</h2>
         <div className="trip-summary-subtitle">รายละเอียดการเดินทางและกิจกรรมทั้งหมด</div>

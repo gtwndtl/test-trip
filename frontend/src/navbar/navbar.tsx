@@ -1,81 +1,119 @@
+import { useEffect, useState } from 'react';
+import { CloseOutlined, DownOutlined, UserOutlined } from '@ant-design/icons';
 import { Dropdown, Modal } from 'antd';
-import {
-  CloseOutlined,
-  MenuOutlined,
-  QuestionCircleOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import './navbar.css';
-import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Authentication from '../component/authentication/authentication/authentication';
+import { GetUserById } from '../services/https';
+import type { UserInterface } from '../interfaces/User';
+import './navbar.css';
 
 const Navbar = () => {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
+    const userID = localStorage.getItem('id');
+    const isLoggedIn = localStorage.getItem('isLogin') === 'true';
 
-  const handleMenuClick = ({ key }: { key: string }) => {
-    if (key === 'login') {
-      setOpen(true);
-    } else if (key === 'setting') {
-      setOpen(true);
-    }
-  };
+    const [openModal, setOpenModal] = useState(false);
+    const [userData, setUserData] = useState<UserInterface | null>(null);
 
-  const menuItems = [
-    { label: 'Login', key: 'login' },
-    { label: 'Setting', key: 'setting' },
-  ];
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (userID && isLoggedIn) {
+                const user = await GetUserById(Number(userID));
+                setUserData(user);
+            }
+        };
+        fetchUserData();
+    }, [userID, isLoggedIn]);
 
-  return (
-    <div className="navbar">
-      <div
-        className="navbar-logo-text"
-        onClick={() => navigate('/')}
-        style={{ cursor: 'pointer' }}
-      >
-        <span>TRIP PLANNER</span>
-      </div>
+    const navLinks = [
+        { label: 'Home', path: '/test' },
+        { label: 'Chat', path: '/chat' },
+        { label: 'Summary', path: '/trip' },
+    ];
 
-      <Modal
-        open={open}
-        onCancel={() => setOpen(false)}
-        footer={null}
-        width={800}
-        closeIcon={<CloseOutlined />}
-        className="custom-modal"
-        styles={{
-          body: {
-            padding: 0,
-            overflow: "hidden",
-            background: "transparent", // สำคัญ: ลบพื้นหลังขาวใน body
-          },
-          content: {
-            background: "transparent", // สำคัญ: ลบพื้นหลังขาวของ modal box
-            boxShadow: "none",         // ลบเงารอบ modal
-          },
-          mask: {
-            backgroundColor: "rgba(0, 0, 0, 0.6)", // ความมืดของพื้นหลัง modal
-          },
-        }}
-      >
-        <Authentication />
-      </Modal>
+    const handleDropdownClick = ({ key }: { key: string }) => {
+        if (key === 'login' || key === 'setting') {
+            setOpenModal(true);
+        } else if (key === 'logout') {
+            handleLogout();
+        }
+    };
 
-      <div className="navbar-links">
-        <Dropdown
-          menu={{ items: menuItems, onClick: handleMenuClick }}
-          trigger={['click']}
-        >
-          <div className="navbar-menu" style={{ cursor: 'pointer' }}>
-            <UserOutlined className="navbar-icon" />
-            <MenuOutlined className="navbar-icon" />
-          </div>
-        </Dropdown>
-        <QuestionCircleOutlined className="navbar-icon" />
-      </div>
-    </div>
-  );
+    const handleLogout = () => {
+        localStorage.clear();
+        setUserData(null);
+        navigate('/home');
+    };
+
+    const dropdownItems = isLoggedIn
+        ? [
+              { label: 'Setting', key: 'setting' },
+              { label: 'Logout', key: 'logout' },
+          ]
+        : [
+              { label: 'Login', key: 'login' },
+          ];
+
+    return (
+        <div className="navbar-container">
+            <div className="navbar-title">Trip Planner</div>
+
+            <div className="navbar-link">
+                {navLinks.map(({ label, path }) => (
+                    <div
+                        key={label}
+                        className={location.pathname === path ? 'active' : ''}
+                        onClick={() => navigate(path)}
+                    >
+                        {label}
+                    </div>
+                ))}
+            </div>
+
+            <div className="navbar-menu">
+                {isLoggedIn && (
+                    <div className="navbar-user">
+                        {userData?.Firstname} {userData?.Lastname}
+                    </div>
+                )}
+                <Dropdown
+                    menu={{ items: dropdownItems, onClick: handleDropdownClick }}
+                    trigger={['click']}
+                >
+                    <div className="navbar-dropdown">
+                        <UserOutlined className="navbar-icon" />
+                        <DownOutlined className="navbar-icon" />
+                    </div>
+                </Dropdown>
+            </div>
+
+            <Modal
+                open={openModal}
+                onCancel={() => setOpenModal(false)}
+                footer={null}
+                width={800}
+                closeIcon={<CloseOutlined />}
+                className="custom-modal"
+                styles={{
+                    body: {
+                        padding: 0,
+                        overflow: 'hidden',
+                        background: 'transparent',
+                    },
+                    content: {
+                        background: 'transparent',
+                        boxShadow: 'none',
+                    },
+                    mask: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                    },
+                }}
+            >
+                <Authentication />
+            </Modal>
+        </div>
+    );
 };
 
 export default Navbar;
