@@ -22,13 +22,14 @@ const LoginPage = ({ onSwitch, isFirstRender }: { onSwitch: () => void; isFirstR
             console.log("SignInUser result:", result); // ดูค่า result ใน console
 
             if (result && result.token && result.token_type) {
+                localStorage.setItem("isLogin", "true");
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('token_type', result.token_type);
+                localStorage.setItem('id', result.id.toString());
                 console.log("Token", result.token);
                 navigate('/home');
                 alert("Login successful"); // เปลี่ยนเป็น alert ดูว่าแสดงไหม
                 console.log("Navigating to /home");
-
             } else {
                 message.error("Invalid login response");
             }
