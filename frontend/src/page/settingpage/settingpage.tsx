@@ -49,32 +49,21 @@ const SettingPage = () => {
           <p>Edit your name, email, and more.</p>
           <div className="setting-account-section">
             <Form form={form} layout="vertical">
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item label="First Name" name="firstname">
-                    <Input disabled />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Last Name" name="lastname">
-                    <Input disabled />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item label="Email" name="email">
-                    <Input disabled />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Birthday" name="birthday">
-                    <Input disabled />
-                  </Form.Item>
-                </Col>
-              </Row>
+              <Form.Item label="First Name" name="firstname">
+                <Input />
+              </Form.Item>
+              <Form.Item label="Last Name" name="lastname">
+                <Input />
+              </Form.Item>
+
+              <Form.Item label="Email" name="email">
+                <Input />
+              </Form.Item>
+              <Form.Item label="Birthday" name="birthday">
+                <Input />
+              </Form.Item>
               <Form.Item label="Age" name="age">
-                <Input disabled />
+                <Input />
               </Form.Item>
             </Form>
           </div>
