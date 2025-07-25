@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { CloseOutlined, DownOutlined, UserOutlined } from '@ant-design/icons';
 import { Dropdown, Modal } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -12,19 +12,21 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  //ใช้ state เพื่อโหลดค่าจาก localStorage
   const [userID, setUserID] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState<UserInterface | null>(null);
   const [openModal, setOpenModal] = useState(false);
 
+  // Load login state and user ID
   useEffect(() => {
-    //โหลดค่า login state และ userID จาก localStorage
-    setUserID(localStorage.getItem('id'));
-    setIsLoggedIn(localStorage.getItem('isLogin') === 'true');
+    const id = localStorage.getItem('id');
+    const loginState = localStorage.getItem('isLogin') === 'true';
+
+    setUserID(id);
+    setIsLoggedIn(loginState);
   }, []);
 
-  //โหลดข้อมูลผู้ใช้เมื่อพร้อม
+  // Fetch user data if logged in
   useEffect(() => {
     const fetchUserData = async () => {
       if (userID && isLoggedIn) {
@@ -36,8 +38,36 @@ const Navbar = () => {
         }
       }
     };
+
     fetchUserData();
   }, [userID, isLoggedIn]);
+
+  const handleLogout = useCallback(() => {
+    localStorage.clear();
+    setUserID(null);
+    setIsLoggedIn(false);
+    setUserData(null);
+    navigate('/');
+  }, [navigate]);
+
+  const handleDropdownClick = useCallback(
+    ({ key }: { key: string }) => {
+      switch (key) {
+        case 'login':
+          setOpenModal(true);
+          break;
+        case 'setting':
+          navigate('/setting');
+          break;
+        case 'logout':
+          handleLogout();
+          break;
+        default:
+          break;
+      }
+    },
+    [navigate, handleLogout]
+  );
 
   const navLinks = [
     { label: 'Home', path: '/' },
@@ -45,30 +75,18 @@ const Navbar = () => {
     { label: 'Summary', path: '/trip' },
   ];
 
-  const handleDropdownClick = ({ key }: { key: string }) => {
-    if (key === 'login' || key === 'setting') {
-      setOpenModal(true);
-    } else if (key === 'logout') {
-      handleLogout();
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.clear();
-    setUserID(null);
-    setIsLoggedIn(false);
-    setUserData(null);
-    navigate('/');
-  };
-
   const dropdownItems = isLoggedIn
     ? [
-      { label: 'Setting', key: 'setting' },
-      { label: 'Logout', key: 'logout' },
-    ]
-    : [
-      { label: 'Login', key: 'login' },
-    ];
+        { label: 'Setting', key: 'setting' },
+        { label: 'Logout', key: 'logout' },
+      ]
+    : [{ label: 'Login', key: 'login' }];
+
+  const renderUserGreeting = () => {
+    if (!isLoggedIn) return 'Welcome, Guest';
+    if (isLoggedIn && !userData) return 'Loading profile...';
+    return `Welcome, ${userData?.Firstname}`;
+  };
 
   return (
     <div className="navbar-container">
@@ -87,11 +105,8 @@ const Navbar = () => {
       </div>
 
       <div className="navbar-menu">
-        <div className="navbar-user">
-          {!isLoggedIn && 'Welcome, Guest'}
-          {isLoggedIn && !userData && 'Loading profile...'}
-          {isLoggedIn && userData && `Welcome, ${userData.Firstname}`}
-        </div>
+        <div className="navbar-user">{renderUserGreeting()}</div>
+
         <Dropdown
           menu={{ items: dropdownItems, onClick: handleDropdownClick }}
           trigger={['click']}
