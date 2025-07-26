@@ -1,9 +1,9 @@
-import { Form, Input, Button, Row, Col, Typography, message } from "antd";
+import { Form, Input, Row, Col, Typography, message } from "antd";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import './account.css';
-import { GetUserById, UpdateUser } from "../../../services/https";
-import type { UserInterface } from "../../../interfaces/User";
+import { GetUserById } from "../../../services/https";
+import { RightOutlined } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
@@ -12,7 +12,6 @@ const Account = () => {
     const [form] = Form.useForm();
     const navigate = useNavigate();
     const [messageApi, contextHolder] = message.useMessage();
-    const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -27,7 +26,7 @@ const Account = () => {
             if (user?.ID) {
                 form.setFieldsValue({
                     email: user.Email,
-                    password: user.Password,
+                    password: "*******",
                 });
             } else {
                 messageApi.error("ไม่พบข้อมูลผู้ใช้");
@@ -47,71 +46,41 @@ const Account = () => {
         }
     }, [userID]);
 
-    const onFinish = async (values: UserInterface) => {
-        const submitData = {
-            ...values,
-        };
-
-        try {
-            const res = await UpdateUser(Number(userID), submitData);
-            if (res.status === 200) {
-                messageApi.success('บันทึกข้อมูลสำเร็จ');
-                setIsEditing(false);
-            } else {
-                messageApi.error(`เกิดข้อผิดพลาดในการบันทึกข้อมูล (code: ${res.status})`);
-            }
-        } catch (error: any) {
-            messageApi.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
-            console.error("Save error:", error.message || error);
-        }
-    };
-    useEffect(() => {
-        if (userID) {
-            fetchUserData(Number(userID));
-        }
-    }, [userID]);
-
-    const renderButtons = () =>
-        isEditing ? (
-            <>
-                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
-                <Button type="primary" htmlType="submit" style={{ marginLeft: 8 }}>
-                    Save
-                </Button>
-            </>
-        ) : (
-            <Button type="default" onClick={() => setIsEditing(true)}>
-                Edit
-            </Button>
-        );
-
     return (
         <div className="account-container">
             {contextHolder}
             <div className="account-box">
                 <div className="account-header">
-                    <Title level={3}>Update Account</Title>
+                    <Title level={3}>Account</Title>
                     <Text type="secondary">You can update your email and password.</Text>
                 </div>
                 {!loading && (
-                    <Form form={form} layout="vertical" className="account-form" onFinish={onFinish}>
+                    <Form form={form} layout="vertical" className="account-form">
                         <Row gutter={32}>
                             <Col xs={24} md={16}>
                                 <Form.Item label="Email" name="email">
-                                    {isEditing ? (
-                                        <Input />
-                                    ) : (
-                                        <Input disabled />
-                                    )}
+                                    <Input
+                                        disabled
+                                        suffix={
+                                            <RightOutlined
+                                                onClick={() => navigate("/setting/change-email")}
+                                                style={{ color: "#999", cursor: "pointer" }}
+                                            />
+                                        }
+                                    />
                                 </Form.Item>
                                 <Form.Item label="Password" name="password">
-                                    {isEditing ? (
-                                        <Input.Password />
-                                    ) : (
-                                        <Input disabled />
-                                    )}
+                                    <Input
+                                        disabled
+                                        type="password"
+                                        suffix={
+                                            <RightOutlined
+                                                onClick={() => navigate("/setting/change-password")}
+                                                style={{ cursor: "pointer", color: "#999" }}
+                                            />
+                                        }
+                                    />
                                 </Form.Item>
-                                <div className="button-group">{renderButtons()}</div>
                             </Col>
                         </Row>
                     </Form>

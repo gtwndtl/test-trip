@@ -56,7 +56,7 @@ const Navbar = () => {
           setOpenModal(true);
           break;
         case 'setting':
-          navigate('/setting');
+          navigate('/settings');
           break;
         case 'logout':
           handleLogout();
