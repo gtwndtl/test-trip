@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Form, Input, Button, Row, Col, Upload, Typography, message, DatePicker } from 'antd';
+import { Form, Input, Button, Row, Col, Upload, Typography, message, DatePicker, InputNumber } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { GetUserById, UpdateUser } from '../../../services/https';
@@ -49,11 +49,8 @@ const Profile = () => {
     const onFinish = async (values: UserInterface) => {
         const submitData = {
             ...values,
-            age : Number(values.Age),
-            birthday: values.Birthday
-                ? dayjs(values.Birthday).format('YYYY-MM-DD')
-                : null,
         };
+
         try {
             const res = await UpdateUser(Number(userID), submitData);
             if (res.status === 200) {
@@ -107,7 +104,7 @@ const Profile = () => {
                             </Form.Item>
                             <Form.Item label="Age" name="age">
                                 {isEditing ? (
-                                    <Input />
+                                    <InputNumber />
                                 ) : (
                                     <Input disabled />
                                 )}
