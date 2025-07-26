@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Form, Input, Button, Row, Col, Upload, Typography, message, DatePicker, InputNumber } from 'antd';
+import { Form, Input, Button, Row, Col, Upload, Typography, message, DatePicker } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { GetUserById, UpdateUser } from '../../../services/https';

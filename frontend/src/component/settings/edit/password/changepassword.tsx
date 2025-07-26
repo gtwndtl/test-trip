@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChangePassword } from "../../../../services/https";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import './changepassword.css';
+import type { ChangePasswordInput } from '../../../../interfaces/ChangePassword';
 
 const { Title, Text } = Typography;
 
@@ -11,7 +12,7 @@ const ChangePasswordUser = () => {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: ChangePasswordInput) => {
     try {
       const payload = {
         currentPassword: values.currentPassword,
@@ -24,8 +25,9 @@ const ChangePasswordUser = () => {
         content: res.message || "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว",
         duration: 2,
       });
-      form.resetFields();
-      setTimeout(() => navigate("/settings/account"), 2000);
+      setTimeout(() => {
+        navigate("/settings/account");
+      }, 2000);
     } catch (err: any) {
       console.error(err);
       messageApi.open({
