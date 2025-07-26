@@ -9,6 +9,7 @@ import type { RestaurantInterface } from "../../interfaces/Restaurant";
 import type { UserInterface } from "../../interfaces/User";
 import type { SignInInterface } from "../../interfaces/SignIn";
 import type { GroqResponse } from "../../interfaces/Groq";
+import type { ChangePasswordInput } from "../../interfaces/ChangePassword";
 
 const apiUrl = "http://localhost:8080";
 const Authorization = localStorage.getItem("token");
@@ -375,6 +376,20 @@ async function SignInUser(signInData: SignInInterface): Promise<{
     }
 }
 
+async function ChangePassword(data: ChangePasswordInput): Promise<{ message: string }> {
+    try {
+        const response = await axios.put<{ message: string }>(
+            `${apiUrl}/users/me/password`,
+            data,
+            requestOptions
+        );
+        return response.data;
+    } catch (error) {
+        const errorData = (error as AxiosError).response?.data as { error?: string } | undefined;
+        throw new Error(errorData?.error || (error as AxiosError).message);
+    }
+}
+
 // Async function สำหรับเรียกเส้นทางทริป
 async function GetRouteFromAPI(startId: number, days: number) {
     try {
@@ -481,6 +496,7 @@ export {
     CreateUser,
     UpdateUser,
     DeleteUser,
+    ChangePassword,
     GetRouteFromAPI,
     PostGroq,
     VerifyOTP,

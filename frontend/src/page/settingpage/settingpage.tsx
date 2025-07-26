@@ -6,6 +6,8 @@ import Navbar from '../../navbar/navbar';
 import './settingpage.css';
 import { Menu } from 'antd';
 import type { MenuProps } from 'antd';
+import AccountWrapper from './AccountWrapper';
+import ChangePasswordUser from '../../component/settings/edit/password/changepassword';
 
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -47,7 +49,11 @@ const SettingPage = () => {
           <div className="setting-menu">
             <Menu
               onClick={onClick}
-              selectedKeys={[location.pathname]}
+              selectedKeys={[
+                location.pathname.startsWith('/settings/account')
+                  ? '/settings/account'
+                  : location.pathname
+              ]}
               mode="inline"
               items={items}
               style={{
@@ -55,11 +61,15 @@ const SettingPage = () => {
                 background: 'transparent',
               }}
             />
+
           </div>
           <div className="setting-content">
             <Routes>
               <Route path="profile" element={<Profile />} />
-              <Route path="account" element={<Account />} />
+              <Route path="account" element={<AccountWrapper />}>
+                <Route index element={<Account />} />
+                <Route path="change-password" element={<ChangePasswordUser />} />
+              </Route>
               <Route path="privacy" element={<div>Privacy Settings Coming Soon</div>} />
               <Route path="security" element={<div>Security Settings Coming Soon</div>} />
               <Route path="language" element={<div>Language Settings Coming Soon</div>} />

@@ -30,7 +30,7 @@ const Account = () => {
                 });
             } else {
                 messageApi.error("ไม่พบข้อมูลผู้ใช้");
-                setTimeout(() => navigate('/setting'), 2000);
+                setTimeout(() => navigate('/settings'), 2000);
             }
         } catch (error) {
             console.error("Error fetching user:", error);
@@ -75,7 +75,7 @@ const Account = () => {
                                         type="password"
                                         suffix={
                                             <RightOutlined
-                                                onClick={() => navigate("/setting/change-password")}
+                                                onClick={() => navigate("/settings/account/change-password")}
                                                 style={{ cursor: "pointer", color: "#999" }}
                                             />
                                         }
