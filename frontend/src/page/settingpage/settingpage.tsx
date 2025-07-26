@@ -1,71 +1,71 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import Account from '../../component/settings/account/account';
+import Profile from '../../component/settings/profile/profile';
 import Navbar from '../../navbar/navbar';
-import { GetUserById } from '../../services/https';
 import './settingpage.css';
-import type { UserInterface } from '../../interfaces/User';
-import { Col, Form, Input, Row } from 'antd';
+import type { MenuProps } from 'antd';
+import { Menu } from 'antd';
+
+type MenuItem = Required<MenuProps>['items'][number];
+
+const items: MenuItem[] = [
+  {
+    key: 'grp',
+    label: 'Settings',
+    type: 'group',
+    children: [
+      { key: '1', label: 'Profile' },
+      { key: '2', label: 'Account' },
+      { key: '3', label: 'Privacy' },
+      { key: '4', label: 'Security' },
+      { key: '5', label: 'Language' },
+    ],
+  },
+];
 
 const SettingPage = () => {
-  const [userID, setUserID] = useState<string | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userData, setUserData] = useState<UserInterface | null>(null);
-  const [form] = Form.useForm();
+  const [selectedKey, setSelectedKey] = useState<string>('1');
 
-  useEffect(() => {
-    const id = localStorage.getItem('id');
-    const loginState = localStorage.getItem('isLogin') === 'true';
-    setUserID(id);
-    setIsLoggedIn(loginState);
-  }, []);
+  const onClick: MenuProps['onClick'] = (e) => {
+    setSelectedKey(e.key);
+  };
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (userID && isLoggedIn) {
-        try {
-          const user = await GetUserById(Number(userID));
-          setUserData(user);
-          form.setFieldsValue({
-            firstname: user.Firstname,
-            lastname: user.Lastname,
-            email: user.Email,
-            birthday: user.Birthday,
-            age: user.Age,
-          });
-        } catch (error) {
-          console.error('Error fetching user:', error);
-        }
-      }
-    };
-
-    fetchUserData();
-  }, [userID, isLoggedIn, form]);
+  const renderContent = () => {
+    switch (selectedKey) {
+      case '1':
+        return <Profile />;
+      case '2':
+        return <Account />;
+      case '3':
+        return <div>Privacy Settings Coming Soon</div>;
+      case '4':
+        return <div>Security Settings Coming Soon</div>;
+      case '5':
+        return <div>Language Settings Coming Soon</div>;
+      default:
+        return <div>Select a setting from the menu</div>;
+    }
+  };
 
   return (
     <div className="setting-container">
       <Navbar />
-      <div className="setting-content">
-        <div className="setting-section">
-          <h1>Account Settings</h1>
-          <p>Edit your name, email, and more.</p>
-          <div className="setting-account-section">
-            <Form form={form} layout="vertical">
-              <Form.Item label="First Name" name="firstname">
-                <Input />
-              </Form.Item>
-              <Form.Item label="Last Name" name="lastname">
-                <Input />
-              </Form.Item>
-
-              <Form.Item label="Email" name="email">
-                <Input />
-              </Form.Item>
-              <Form.Item label="Birthday" name="birthday">
-                <Input />
-              </Form.Item>
-              <Form.Item label="Age" name="age">
-                <Input />
-              </Form.Item>
-            </Form>
+      <div className="setting-wrapper">
+        <div className="setting-box">
+          <div className="setting-menu">
+            <Menu
+              onClick={onClick}
+              selectedKeys={[selectedKey]}
+              mode="inline"
+              items={items}
+              style={{
+                borderInlineEnd: 'none',
+                background: 'transparent',
+              }}
+            />
+          </div>
+          <div className="setting-content">
+            {renderContent()}
           </div>
         </div>
       </div>

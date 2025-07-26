@@ -23,3 +23,7 @@ body {
   height: 100vh;
   justify-content: center;
 }
+/* ในไฟล์ global เช่น index.css หรือ App.css */
+input, textarea, .ant-input, .ant-picker-input input {
+  font-family: inherit;
+}
