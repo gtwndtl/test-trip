@@ -21,10 +21,9 @@ const MainRoutes: React.FC = () => {
       element: <TripSummaryPage />,
     },
     {
-      path: "/setting",
+      path: "/settings/*",
       element: <SettingPage />,
     }
-
   ]);
 
   return (

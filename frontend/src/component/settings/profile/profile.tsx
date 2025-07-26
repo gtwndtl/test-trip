@@ -7,7 +7,7 @@ import './profile.css';
 import dayjs from 'dayjs';
 import type { UserInterface } from '../../../interfaces/User';
 
-const { Text, Title, Link } = Typography;
+const { Text, Title } = Typography;
 
 const Profile = () => {
     const [userID, setUserID] = useState<string | null>(null);

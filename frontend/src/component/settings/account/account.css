@@ -15,8 +15,52 @@
   align-items: center;
 }
 
-.account-button-group {
-  margin-top: 32px;
-  display: flex;
-  justify-content: flex-start;
+.account-form .ant-form-item {
+  margin-bottom: 16px;
 }
+
+/* ให้ทุก input มีความสูง ขนาด และขอบเหมือนกัน */
+.account-form .ant-input,
+.account-form .ant-input-password,
+.account-form .ant-input-number,
+.account-form .ant-input[disabled],
+.account-form .ant-input-number-disabled {
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  height: 40px;
+  background-color: #fff;
+  box-shadow: none;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+/* เพิ่มความเหมือนสำหรับ input ตอน disable */
+.account-form .ant-input[disabled] {
+  color: rgba(0, 0, 0, 0.85);
+  background-color: #fafafa;
+  border-color: #d9d9d9;
+  cursor: not-allowed;
+}
+
+/* ให้แสดงเหมือนตอน enabled */
+.account-form .ant-input[disabled]:hover,
+.account-form .ant-input-number-disabled:hover {
+  border-color: #40a9ff;
+}
+.account-form .ant-input-number {
+  width: 100%;
+  height: 40px;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.account-form .ant-input-number-input {
+  height: 38px; /* subtract border size */
+  padding: 4px 11px;
+}
+
+/* สำหรับฟอร์มให้เว้นระยะห่างระหว่าง field */
+.account-form .ant-form-item {
+  margin-bottom: 16px;
+}
+
