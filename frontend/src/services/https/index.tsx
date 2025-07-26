@@ -405,6 +405,43 @@ async function PostGroq(prompt: string): Promise<GroqResponse> {
     }
 }
 
+// ฟังก์ชันส่ง OTP
+async function SendOTP(email: string): Promise<{ message: string }> {
+  try {
+    const response = await axios.post<{ message: string }>(
+      `${apiUrl}/send-otp`,
+      { email },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    const errorData = (error as AxiosError).response?.data as { error?: string } | undefined;
+    throw new Error(errorData?.error || (error as AxiosError).message);
+  }
+}
+
+// ฟังก์ชันยืนยัน OTP
+async function VerifyOTP(email: string, otp: string): Promise<{ message: string }> {
+  try {
+    const response = await axios.post<{ message: string }>(
+      `${apiUrl}/verify-otp`,
+      { email, otp },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    const errorData = (error as AxiosError).response?.data as { error?: string } | undefined;
+    throw new Error(errorData?.error || (error as AxiosError).message);
+  }
+}
 
 
 export {
@@ -446,4 +483,6 @@ export {
     DeleteUser,
     GetRouteFromAPI,
     PostGroq,
+    VerifyOTP,
+    SendOTP,
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/gtwndtl/trip-spark-builder/controller/Trips"
 	"github.com/gtwndtl/trip-spark-builder/controller/User"
 	"github.com/gtwndtl/trip-spark-builder/middlewares"
+	"github.com/gtwndtl/trip-spark-builder/controller/Forgetpassword"
 )
 
 func main() {
@@ -53,6 +54,10 @@ func main() {
 
 	// Public routes (ไม่ต้องตรวจสอบ token)
 	r.POST("/signinuser", userCtrl.SignInUser)
+
+	// 👉 ForgetPassword routes (เขียนตรงๆ)
+	r.POST("/send-otp", Forgetpassword.SendOTPHandler)
+	r.POST("/verify-otp", Forgetpassword.VerifyOTPHandler)
 
 	// สร้าง group สำหรับ route ที่ต้องตรวจสอบ token (AuthMiddleware)
 	authorized := r.Group("/")
