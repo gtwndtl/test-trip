@@ -14,7 +14,8 @@ const Profile = () => {
     const [form] = Form.useForm();
     const navigate = useNavigate();
     const [messageApi, contextHolder] = message.useMessage();
-    const [isEditing, setIsEditing] = useState(false); // <-- โหมดแก้ไข
+    const [isEditing, setIsEditing] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const id = localStorage.getItem('id');
@@ -32,20 +33,17 @@ const Profile = () => {
                     age: user.Age,
                 });
             } else {
-                messageApi.open({
-                    type: "error",
-                    content: "ไม่พบข้อมูลผู้ใช้",
-                });
+                messageApi.error("ไม่พบข้อมูลผู้ใช้");
                 setTimeout(() => navigate('/setting'), 2000);
             }
         } catch (error) {
             console.error("Error fetching user:", error);
-            messageApi.open({
-                type: "error",
-                content: "เกิดข้อผิดพลาดในการดึงข้อมูล",
-            });
+            messageApi.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
+        } finally {
+            setLoading(false);
         }
     };
+
     const onFinish = async (values: UserInterface) => {
         const submitData = {
             ...values,
@@ -70,6 +68,20 @@ const Profile = () => {
         }
     }, [userID]);
 
+    const renderButtons = () =>
+        isEditing ? (
+            <>
+                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
+                <Button type="primary" htmlType="submit" style={{ marginLeft: 8 }}>
+                    Save
+                </Button>
+            </>
+        ) : (
+            <Button type="default" onClick={() => setIsEditing(true)}>
+                Edit
+            </Button>
+        );
+
     return (
         <div className="profile-container">
             {contextHolder}
@@ -78,76 +90,60 @@ const Profile = () => {
                     <Title level={3}>Profile Settings</Title>
                     <Text type="secondary">Edit your name and avatar.</Text>
                 </div>
-                <Form form={form} layout="vertical" className="profile-form" onFinish={onFinish}>
-                    <Row gutter={32}>
-                        <Col xs={24} md={16}>
-                            <Form.Item label="First Name" name="firstname">
-                                {isEditing ? (
-                                    <Input />
-                                ) : (
-                                    <Input disabled />
-                                )}
-                            </Form.Item>
-                            <Form.Item label="Last Name" name="lastname">
-                                {isEditing ? (
-                                    <Input />
-                                ) : (
-                                    <Input disabled />
-                                )}
-                            </Form.Item>
-                            <Form.Item label="Birthday" name="birthday">
-                                {isEditing ? (
-                                    <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
-                                ) : (
-                                    <Input disabled />
-                                )}
-                            </Form.Item>
-                            <Form.Item label="Age" name="age">
-                                {isEditing ? (
-                                    <InputNumber />
-                                ) : (
-                                    <Input disabled />
-                                )}
-                            </Form.Item>
-                            <div className="delete-section">
-                                <Link>Delete Your Account</Link>
-                                <Text type="secondary" style={{ display: 'block' }}>
-                                    You will receive an email to confirm your decision. All your data will be erased.
-                                </Text>
-                            </div>
-
-                            <div className="button-group">
-                                {isEditing ? (
-                                    <>
-                                        <Button
-                                            onClick={() => {
-                                                setIsEditing(false);
-                                            }}
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button type="primary" htmlType="submit" style={{ marginLeft: 8 }}>
-                                            Save
-                                        </Button>
-                                    </>
-                                ) : (
-                                    <Button type="default" onClick={() => setIsEditing(true)}>
-                                        Edit
+                {!loading && (
+                    <Form form={form} layout="vertical" className="profile-form" onFinish={onFinish}>
+                        <Row gutter={32}>
+                            <Col xs={24} md={16}>
+                                <Form.Item label="First Name" name="firstname">
+                                    {isEditing ? (
+                                        <Input />
+                                    ) : (
+                                        <Input disabled />
+                                    )}
+                                </Form.Item>
+                                <Form.Item label="Last Name" name="lastname">
+                                    {isEditing ? (
+                                        <Input />
+                                    ) : (
+                                        <Input disabled />
+                                    )}
+                                </Form.Item>
+                                <Form.Item label="Birthday">
+                                    {isEditing ? (
+                                        <Form.Item name="birthday" noStyle>
+                                            <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+                                        </Form.Item>
+                                    ) : (
+                                        <Input
+                                            disabled
+                                            value={
+                                                form.getFieldValue('birthday')
+                                                    ? dayjs(form.getFieldValue('birthday')).format('YYYY-MM-DD')
+                                                    : ''
+                                            }
+                                        />
+                                    )}
+                                </Form.Item>
+                                <Form.Item label="Age" name="age">
+                                    {isEditing ? (
+                                        <InputNumber />
+                                    ) : (
+                                        <Input disabled />
+                                    )}
+                                </Form.Item>
+                                <div className="button-group">{renderButtons()}</div>
+                            </Col>
+                            <Col xs={24} md={8} className="avatar-section">
+                                <div className="avatar-placeholder" />
+                                <Upload showUploadList={false}>
+                                    <Button icon={<UploadOutlined />} type="primary">
+                                        Upload a picture
                                     </Button>
-                                )}
-                            </div>
-                        </Col>
-
-                        <Col xs={24} md={8} className="avatar-section">
-                            <div className="avatar-placeholder" />
-                            <Upload showUploadList={false}>
-                                <Button icon={<UploadOutlined />} type="primary">
-                                    Upload a picture
-                                </Button>
-                            </Upload>
-                        </Col>
-                    </Row>
-                </Form>
+                                </Upload>
+                            </Col>
+                        </Row>
+                    </Form>
+                )}
             </div>
         </div>
     );
