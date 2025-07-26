@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { CloseOutlined, DingdingOutlined, DownOutlined, UserOutlined } from '@ant-design/icons';
+import { CloseOutlined, DownOutlined, UserOutlined } from '@ant-design/icons';
 import { Dropdown, Modal } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -89,7 +89,7 @@ const Navbar = () => {
 
   return (
     <div className="navbar-container">
-      <div className="navbar-title"><DingdingOutlined />TRIP PLANNER</div>
+      <div className="navbar-title">Trip Planner</div>
       <div className="navbar-link">
         {navLinks.map(({ label, path }) => (
           <div
