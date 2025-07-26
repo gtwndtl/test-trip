@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Form, Input, Button, Row, Col, Upload, Typography, message, DatePicker } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { GetUserById } from '../../../services/https';
+import { GetUserById, UpdateUser } from '../../../services/https';
 import './profile.css';
 import dayjs from 'dayjs';
+import type { UserInterface } from '../../../interfaces/User';
 
 const { Text, Title, Link } = Typography;
 
@@ -45,20 +46,32 @@ const Profile = () => {
             });
         }
     };
+    const onFinish = async (values: UserInterface) => {
+        const submitData = {
+            ...values,
+            age : Number(values.Age),
+            birthday: values.Birthday
+                ? dayjs(values.Birthday).format('YYYY-MM-DD')
+                : null,
+        };
+        try {
+            const res = await UpdateUser(Number(userID), submitData);
+            if (res.status === 200) {
+                messageApi.success('บันทึกข้อมูลสำเร็จ');
+                setIsEditing(false);
+            } else {
+                messageApi.error(`เกิดข้อผิดพลาดในการบันทึกข้อมูล (code: ${res.status})`);
+            }
+        } catch (error: any) {
+            messageApi.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            console.error("Save error:", error.message || error);
+        }
+    };
     useEffect(() => {
         if (userID) {
             fetchUserData(Number(userID));
         }
     }, [userID]);
-    const handleSave = (values: any) => {
-        const submitData = {
-            ...values,
-            birthday: values.birthday ? values.birthday.format('YYYY-MM-DD') : null,
-        };
-        console.log("Form submitted:", submitData);
-        messageApi.success("ข้อมูลโปรไฟล์ถูกบันทึกเรียบร้อย (จำลอง)");
-        setIsEditing(false);
-    };
 
     return (
         <div className="profile-container">
@@ -68,7 +81,7 @@ const Profile = () => {
                     <Title level={3}>Profile Settings</Title>
                     <Text type="secondary">Edit your name and avatar.</Text>
                 </div>
-                <Form form={form} layout="vertical" className="profile-form" onFinish={handleSave}>
+                <Form form={form} layout="vertical" className="profile-form" onFinish={onFinish}>
                     <Row gutter={32}>
                         <Col xs={24} md={16}>
                             <Form.Item label="First Name" name="firstname">

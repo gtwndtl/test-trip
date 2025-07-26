@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, type AxiosResponse } from "axios";
 
 import type { AccommodationInterface } from "../../interfaces/Accommodation";
 import type { ConditionInterface } from "../../interfaces/Condition";
@@ -8,7 +8,7 @@ import type { LandmarkInterface } from "../../interfaces/Landmark";
 import type { RestaurantInterface } from "../../interfaces/Restaurant";
 import type { UserInterface } from "../../interfaces/User";
 import type { SignInInterface } from "../../interfaces/SignIn";
-import type { GroqResponse} from "../../interfaces/Groq";
+import type { GroqResponse } from "../../interfaces/Groq";
 
 const apiUrl = "http://localhost:8080";
 const Authorization = localStorage.getItem("token");
@@ -17,14 +17,14 @@ const Bearer = localStorage.getItem("token_type");
 const requestOptions = {
 
     headers: {
-  
-      "Content-Type": "application/json",
-  
-      Authorization: `${Bearer} ${Authorization}`,
-  
+
+        "Content-Type": "application/json",
+
+        Authorization: `${Bearer} ${Authorization}`,
+
     },
-  
-  };
+
+};
 
 async function GetAllAccommodations(): Promise<AccommodationInterface[]> {
     try {
@@ -60,7 +60,7 @@ async function UpdateAccommodation(id: number, accommodation: AccommodationInter
     } catch (error) {
         throw new Error((error as AxiosError).message);
     }
-}   
+}
 
 async function DeleteAccommodation(id: number): Promise<void> {
     try {
@@ -75,9 +75,9 @@ async function GetAllConditions(): Promise<ConditionInterface[]> {
         const response = await axios.get<ConditionInterface[]>(`${apiUrl}/conditions`, requestOptions);
         return response.data;
     }
-catch (error) {
+    catch (error) {
         throw new Error((error as AxiosError).message);
-    }   
+    }
 }
 
 async function GetConditionById(id: number): Promise<ConditionInterface> {
@@ -94,7 +94,7 @@ async function CreateCondition(condition: ConditionInterface): Promise<Condition
         const response = await axios.post<ConditionInterface>(`${apiUrl}/conditions`, condition, requestOptions);
         return response.data;
     }
-catch (error) {
+    catch (error) {
         throw new Error((error as AxiosError).message);
     }
 }
@@ -135,12 +135,12 @@ async function GetShortestPathById(id: number): Promise<ShortestpathInterface> {
 }
 
 async function CreateShortestPath(shortestPath: ShortestpathInterface): Promise<ShortestpathInterface> {
-  try {
-    const response = await axios.post<ShortestpathInterface>(`${apiUrl}/shortest-paths`, shortestPath, requestOptions);
-    return response.data;
-  } catch (error) {
-    throw new Error((error as AxiosError).message);
-  }
+    try {
+        const response = await axios.post<ShortestpathInterface>(`${apiUrl}/shortest-paths`, shortestPath, requestOptions);
+        return response.data;
+    } catch (error) {
+        throw new Error((error as AxiosError).message);
+    }
 }
 
 async function UpdateShortestPath(id: number, shortestPath: ShortestpathInterface): Promise<ShortestpathInterface> {
@@ -319,10 +319,17 @@ async function CreateUser(user: UserInterface): Promise<UserInterface> {
     }
 }
 
-async function UpdateUser(id: number, user: UserInterface): Promise<UserInterface> {
+async function UpdateUser(
+    id: number,
+    user: UserInterface
+): Promise<AxiosResponse<UserInterface>> {
     try {
-        const response = await axios.put<UserInterface>(`${apiUrl}/users/${id}`, user, requestOptions);
-        return response.data;
+        const response = await axios.put<UserInterface>(
+            `${apiUrl}/users/${id}`,
+            user,
+            requestOptions
+        );
+        return response;
     } catch (error) {
         throw new Error((error as AxiosError).message);
     }
@@ -336,10 +343,12 @@ async function DeleteUser(id: number): Promise<void> {
     }
 }
 
-async function SignInUser(signInData: SignInInterface): Promise<{ token: string; token_type: string; id: number }> {
+async function SignInUser(signInData: SignInInterface): Promise<{
+    message(message: any): unknown; token: string; token_type: string; id: number
+}> {
     try {
         const response = await axios.post<{ token: string; token_type: string; id: number }>(
-            `${apiUrl}/signinuser`, 
+            `${apiUrl}/signinuser`,
             signInData,
             {
                 headers: {
@@ -368,32 +377,32 @@ async function SignInUser(signInData: SignInInterface): Promise<{ token: string;
 
 // Async function สำหรับเรียกเส้นทางทริป
 async function GetRouteFromAPI(startId: number, days: number) {
-  try {
-    const response = await axios.get(
-      `http://localhost:8080/gen-route?start=P${startId}&days=${days}`
-    );
-    return response.data; // ส่งคืนข้อมูลที่ frontend ต้องใช้
-  } catch (error) {
-    console.error('เกิดข้อผิดพลาดขณะเรียก API เส้นทาง:', error);
-    throw error; // ส่ง error กลับไปให้ component ไปจัดการ
-  }
+    try {
+        const response = await axios.get(
+            `http://localhost:8080/gen-route?start=P${startId}&days=${days}`
+        );
+        return response.data; // ส่งคืนข้อมูลที่ frontend ต้องใช้
+    } catch (error) {
+        console.error('เกิดข้อผิดพลาดขณะเรียก API เส้นทาง:', error);
+        throw error; // ส่ง error กลับไปให้ component ไปจัดการ
+    }
 }
 
 async function PostGroq(prompt: string): Promise<GroqResponse> {
-  try {
-    const response = await axios.post<GroqResponse>(
-      `${apiUrl}/api/groq`,
-      { prompt },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error((error as AxiosError).message);
-  }
+    try {
+        const response = await axios.post<GroqResponse>(
+            `${apiUrl}/api/groq`,
+            { prompt },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        throw new Error((error as AxiosError).message);
+    }
 }
 
 
@@ -406,7 +415,7 @@ export {
     UpdateAccommodation,
     DeleteAccommodation,
     GetAllConditions,
-    GetConditionById,   
+    GetConditionById,
     CreateCondition,
     UpdateCondition,
     DeleteCondition,
@@ -434,7 +443,7 @@ export {
     GetUserById,
     CreateUser,
     UpdateUser,
-    DeleteUser, 
+    DeleteUser,
     GetRouteFromAPI,
     PostGroq,
 }
