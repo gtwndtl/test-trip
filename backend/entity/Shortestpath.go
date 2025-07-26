@@ -7,21 +7,19 @@ import (
 type Shortestpath struct {
 	gorm.Model
 
-	TripID uint
+	TripID uint   `binding:"required"`             // ต้องมี Trip ID
 	Trip   *Trips `gorm:"foreignKey:TripID"`
 
-	Day   int
-	PathIndex  int
+	Day       int `binding:"required,gte=1,lte=30"`    // ต้องระบุวันที่ (1-30)
+	PathIndex int `binding:"required,gte=0"`    // index ของเส้นทางในแต่ละวัน
 
-	FromCode string
-	ToCode   string
+	FromCode string `binding:"required"`         // ต้องมีรหัสต้นทาง
+	ToCode   string `binding:"required"`           // ต้องมีรหัสปลายทาง
 
-	Type string
+	Type     string  `binding:"required"`             // ประเภท เช่น เดิน/รถ
+	Distance float32 `binding:"required,gte=0"`   // ระยะทาง (>= 0)
 
-	Distance float32
-
-	// ข้อมูลกิจกรรมและเวลา
-	ActivityDescription string `gorm:"type:text"` // บรรยายกิจกรรม เช่น "ไหว้พระที่วัดพระแก้ว"
-	StartTime           string // เวลาเริ่ม เช่น "08:00"
-	EndTime             string // เวลาสิ้นสุด เช่น "09:00"
+	ActivityDescription string `binding:"omitempty,max=1000"` // คำบรรยายกิจกรรม ไม่บังคับ
+	StartTime           string `binding:"required"`     // เวลาเริ่ม เช่น "08:00"
+	EndTime             string `binding:"required"`       // เวลาเลิก เช่น "09:00"
 }

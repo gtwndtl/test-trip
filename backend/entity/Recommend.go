@@ -5,10 +5,13 @@ import (
 )
 
 type Recommend struct {
-	gorm.Model 
-	condition string
-	trip_id uint
-	Trip    *Trips  `gorm:"foreignKey:trip_id"`
-	review_id uint
-	Review  *Review `gorm:"foreignKey:review_id"`
+	gorm.Model
+
+	Condition string `binding:"required,min=2,max=100"` // เงื่อนไขการแนะนำ เช่น "เหมาะกับผู้สูงอายุ"
+
+	TripID uint   `binding:"required"`       // อ้างอิงทริป
+	Trip   *Trips `gorm:"foreignKey:TripID"`
+
+	ReviewID uint    `binding:"required"`  // อ้างอิงรีวิว
+	Review   *Review `gorm:"foreignKey:ReviewID"`
 }
