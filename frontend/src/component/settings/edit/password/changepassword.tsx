@@ -25,7 +25,7 @@ const ChangePasswordUser = () => {
         duration: 2,
       });
       form.resetFields();
-      setTimeout(() => navigate("/settings"), 1000);
+      setTimeout(() => navigate("/settings/account"), 2000);
     } catch (err: any) {
       console.error(err);
       messageApi.open({
@@ -35,6 +35,15 @@ const ChangePasswordUser = () => {
       });
     }
   };
+
+  const renderButtons = () => (
+    <>
+      <Button onClick={() => navigate("/settings/account")}>Cancel</Button>
+      <Button type="primary" htmlType="submit" style={{ marginLeft: 8 }}>
+        Save
+      </Button>
+    </>
+  );
 
   return (
     <div className="change-password">
@@ -104,10 +113,7 @@ const ChangePasswordUser = () => {
             iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
           />
         </Form.Item>
-
-        <Button type="primary" htmlType="submit" style={{ marginTop: 16 }}>
-          Save Changes
-        </Button>
+        <div className="button-group">{renderButtons()}</div>
       </Form>
     </div>
   );
