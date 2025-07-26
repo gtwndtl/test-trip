@@ -60,6 +60,7 @@ const ChangePasswordUser = () => {
         layout="vertical"
         onFinish={onSubmit}
         autoComplete="off"
+        requiredMark={false}
         className="change-password-form"
       >
         <Form.Item
