@@ -110,7 +110,7 @@ const Navbar = () => {
           trigger={['click']}
         >
           <div className="navbar-dropdown">
-            <UserOutlined className="navbar-icon" />
+            <UserOutlined className="navbar-profile-icon" />
             <DownOutlined className="navbar-icon" />
           </div>
         </Dropdown>
