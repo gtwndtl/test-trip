@@ -13,5 +13,7 @@ type User struct {
 	Age       int       `binding:"gte=0,lte=120"`
 	Birthday  time.Time `binding:"required"` // ถ้าไม่อยากบังคับให้ส่งมา ก็ลบ `required`
 	Password  string    `binding:"required,min=6,max=100"`
-	Profile   string    `gorm:"type:longtext" binding:"omitempty"` // optional, สูงสุด 10000 ตัวอักษร                        
+	Profile   string    `gorm:"type:longtext" binding:"omitempty"` // optional, สูงสุด 10000 ตัวอักษร  
+	Type string `gorm:"default:user"`
+                     
 }

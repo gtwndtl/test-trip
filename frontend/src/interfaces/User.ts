@@ -6,6 +6,8 @@ export interface UserInterface {
     Age?: number; // User's age
     Birthday?: string; // User's birthday in 'YYYY-MM-DD' format
     Password?: string; // User's password, should be hashed in production
+    Profile?: string; // User's profile picture URL or path
+    Type?: 'user' | 'Google'; // User type, can be 'user' or 'Google'
 }
 
 // Firstname          string    

@@ -39,54 +39,74 @@ const LoginPage = ({ onSwitch, isFirstRender }: { onSwitch: () => void; isFirstR
     };
 
     const handleGoogleLogin = async (credentialResponse: any) => {
-        console.log('Received values of form: ', credentialResponse);
-        try {
-            const email = credentialResponse.email;
-            const fakePassword = "google_oauth_password";
+    console.log('Received values of form: ', credentialResponse);
+    try {
+        const email = credentialResponse.email;
+        const fakePassword = "google_oauth_password";
 
-            const users = await GetAllUsers();
-            const userExists = users.find((u: any) => u.Email === email);
+        // ใช้ชื่อและนามสกุลจาก Google API
+        const firstname = credentialResponse.given_name || "Google";
+        const lastname = credentialResponse.family_name || "User";
 
-            if (!userExists) {
-                await CreateUser({ Email: email, Password: fakePassword });
-                message.success("สมัครสมาชิกด้วย Google สำเร็จ");
-            }
+        const birthday = new Date().toISOString(); // default
+        const users = await GetAllUsers();
+        const userExists = users.find((u: any) => u.Email === email);
 
-            const loginResult = await SignInUser({ Email: email, Password: fakePassword });
-            console.log("Google login result:", loginResult); // ดูค่า loginResult ใน console
-            if (loginResult && loginResult.token && loginResult.token_type) {
-                localStorage.setItem("token", loginResult.token);
-                localStorage.setItem("token_type", loginResult.token_type);
-                navigate("/home");
-                message.success("เข้าสู่ระบบด้วย Google สำเร็จ");
-            } else {
-                message.error("เข้าสู่ระบบล้มเหลว");
-            }
-        } catch (err) {
-            console.error("Google login failed", err);
-            message.error("Google login ล้มเหลว");
+        if (!userExists) {
+            await CreateUser({
+                Firstname: firstname,
+                Lastname: lastname,
+                Email: email,
+                Password: fakePassword,
+                Birthday: birthday,
+                Age: 0,
+                Profile: credentialResponse.picture || "", // เก็บรูปโปรไฟล์ด้วยได้
+                Type: 'Google' // ระบุว่าเป็นผู้ใช้จาก Google
+            });
+            message.success("สมัครสมาชิกด้วย Google สำเร็จ");
         }
-    };
+
+        const loginResult = await SignInUser({ Email: email, Password: fakePassword });
+        if (loginResult && loginResult.token && loginResult.token_type) {
+            localStorage.setItem("isLogin", "true");
+            localStorage.setItem("token", loginResult.token);
+            localStorage.setItem("token_type", loginResult.token_type);
+            localStorage.setItem('id', loginResult.id.toString());
+            navigate("/");
+            message.success("เข้าสู่ระบบด้วย Google สำเร็จ");
+        } else {
+            message.error("เข้าสู่ระบบล้มเหลว");
+        }
+    } catch (err) {
+        console.error("Google login failed", err);
+        message.error("Google login ล้มเหลว");
+    }
+};
+
 
 
     const googleLogin = useGoogleLogin({
         flow: 'implicit', // หรือ 'auth-code' ถ้าใช้ server ดึงข้อมูลเพิ่ม
         onSuccess: async (tokenResponse) => {
-            try {
-                // ดึงข้อมูลผู้ใช้จาก Google ด้วย access_token
-                const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                    headers: {
-                        Authorization: `Bearer ${tokenResponse.access_token}`,
-                    },
-                });
-                const profile = await res.json();
+    try {
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: {
+                Authorization: `Bearer ${tokenResponse.access_token}`,
+            },
+        });
+        const profile = await res.json();
 
-                // fake แบบ credential object เดิม เพื่อใช้กับ handleGoogleLogin
-                await handleGoogleLogin({ credential: tokenResponse.access_token, email: profile.email });
-            } catch (err) {
-                message.error("Google login ล้มเหลว");
-            }
-        },
+        await handleGoogleLogin({
+            credential: tokenResponse.access_token,
+            email: profile.email,
+            given_name: profile.given_name,
+            family_name: profile.family_name,
+            picture: profile.picture
+        });
+    } catch (err) {
+        message.error("Google login ล้มเหลว");
+    }
+},
         onError: () => {
             message.error("Google login ล้มเหลว");
         },

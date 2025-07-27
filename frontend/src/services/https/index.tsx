@@ -369,7 +369,12 @@ async function SignInUser(signInData: SignInInterface): Promise<{
         localStorage.setItem("token_type", token_type);
         localStorage.setItem("user_id", id.toString());
 
-        return { token, token_type, id };
+        return {
+            message: () => undefined,
+            token,
+            token_type,
+            id
+        };
     } catch (error) {
         const errorData = (error as AxiosError).response?.data as { error?: string } | undefined;
         throw new Error(errorData?.error || (error as AxiosError).message);

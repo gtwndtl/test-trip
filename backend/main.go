@@ -10,6 +10,7 @@ import (
 	"github.com/gtwndtl/trip-spark-builder/controller/Accommodation"
 	"github.com/gtwndtl/trip-spark-builder/controller/Condition"
 	"github.com/gtwndtl/trip-spark-builder/controller/Distance"
+	"github.com/gtwndtl/trip-spark-builder/controller/Forgetpassword"
 	"github.com/gtwndtl/trip-spark-builder/controller/GenTrip"
 	"github.com/gtwndtl/trip-spark-builder/controller/GroqApi"
 	"github.com/gtwndtl/trip-spark-builder/controller/Landmark"
@@ -18,7 +19,6 @@ import (
 	"github.com/gtwndtl/trip-spark-builder/controller/Trips"
 	"github.com/gtwndtl/trip-spark-builder/controller/User"
 	"github.com/gtwndtl/trip-spark-builder/middlewares"
-	"github.com/gtwndtl/trip-spark-builder/controller/Forgetpassword"
 )
 
 func main() {
@@ -96,7 +96,7 @@ func main() {
 	authorized.GET("/users/:id", userCtrl.GetUserByID)
 	authorized.PUT("/users/:id", userCtrl.UpdateUser)
 	authorized.DELETE("/users/:id", userCtrl.DeleteUser)
-	authorized.POST("/users", userCtrl.CreateUser) // ถ้าต้องการให้สร้าง user ต้องล็อกอินก่อน ถ้าไม่ก็เอาไว้ public ก็ได้
+	r.POST("/users", userCtrl.CreateUser) // ถ้าต้องการให้สร้าง user ต้องล็อกอินก่อน ถ้าไม่ก็เอาไว้ public ก็ได้
 	authorized.PUT("/users/me/password", userCtrl.ChangePassword)
 
 
