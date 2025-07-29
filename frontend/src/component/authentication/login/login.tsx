@@ -102,7 +102,7 @@ const LoginPage = ({ onSwitch, isFirstRender }: LoginPageProps) => {
                     <span className="login-title">TRIP PLANNER</span>
                 </div>
                 <div className="signup">
-                    <p className="signup-text">Are you have account?</p>
+                    <p className="signup-text">Don't have an account?</p>
                     <a className="signup-link" onClick={onSwitch}>Sign up</a>
                 </div>
                 <Form className="login-form" name="login" onFinish={onFinish}>
