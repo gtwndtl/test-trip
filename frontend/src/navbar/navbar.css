@@ -5,11 +5,12 @@
     justify-content: space-between;
     padding: 10px 40px;
     color: #000000;
+    border-bottom: #000000 3px solid;
 }
 
 .navbar-title {
     flex: 1;
-    font-size: 2rem;
+    font-size: 1rem;
     color: rgb(0, 0, 0);
     font-weight: 500;
 }

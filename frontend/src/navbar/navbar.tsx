@@ -69,9 +69,9 @@ const Navbar = () => {
   );
 
   const navLinks = [
-    { label: 'Home', path: '/' },
-    { label: 'Chat', path: '/chat' },
-    { label: 'Summary', path: '/trip' },
+    { label: 'HOME', path: '/' },
+    { label: 'CHAT', path: '/chat' },
+    { label: 'SUMMARY', path: '/trip' },
   ];
 
   const dropdownItems = isLoggedIn
@@ -89,7 +89,7 @@ const Navbar = () => {
 
   return (
     <div className="navbar-container">
-      <div className="navbar-title">Trip Planner</div>
+      <div className="navbar-title"><h1>TRIP PLANNER</h1></div>
       <div className="navbar-link">
         {navLinks.map(({ label, path }) => (
           <div

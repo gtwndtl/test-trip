@@ -4,7 +4,6 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(to bottom, #f1f3f6 0%, #f1f3f6 40%, #ffffff 40%, #ffffff 100%);
 }
 
 .trip-summary-page-content {

@@ -21,8 +21,6 @@ const HeroCarousel = () => {
           </div>
         ))}
       </Carousel>
-
-      {/* เนื้อหาทับบน Carousel */}
       <div className="overlay">
         <motion.h1
           initial={{ opacity: 0, y: 50, scale: 0.95 }}

@@ -3,7 +3,6 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(to bottom, #f1f3f6 0%, #f1f3f6 40%, #ffffff 40%, #ffffff 100%);
 }
 
 
@@ -28,7 +27,7 @@
 
 .setting-menu {
   width: 240px;
-  background: #fdfdff;
+  background: #f9f0f0;
   padding: 24px;
   border-right: 1px solid #f0f0f0;
 }

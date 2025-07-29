@@ -1,4 +1,3 @@
-import Footer from "../../component/landing/footer/footer";
 import "./home.css";
 import LandingPage from "../../component/landing/landing";
 import Head from "../../navbar/head";
@@ -10,7 +9,6 @@ const Home = () => {
         <Head />
       </div>
       <LandingPage />
-      <Footer />
     </div>
   );
 };
