@@ -48,7 +48,7 @@ func main() {
 	userCtrl := User.NewUserController(db)
 	distanceCtrl := &Distance.DistanceController{MysqlDB: db, PostgisDB: postgresDB,}
 	tripsCtrl := Trips.NewTripsController(db)
-	shortestpathCtrl := Shortestpath.NewShortestPathController(db)
+	shortestpathCtrl := Shortestpath.NewShortestPathController(db, postgresDB)
 	routeCtrl := &GenTrip.RouteController{}
 
 	// Public routes (ไม่ต้องตรวจสอบ token)
@@ -102,10 +102,10 @@ func main() {
 
 	// Shortest Path routes
 	r.POST("/shortest-paths", shortestpathCtrl.CreateShortestPath)
-	authorized.GET("/shortest-paths", shortestpathCtrl.GetAllShortestPaths)
-	authorized.GET("/shortest-paths/:id", shortestpathCtrl.GetShortestPathByID)
-	authorized.PUT("/shortest-paths/:id", shortestpathCtrl.UpdateShortestPath)
-	authorized.DELETE("/shortest-paths/:id", shortestpathCtrl.DeleteShortestPath)
+	r.GET("/shortest-paths", shortestpathCtrl.GetAllShortestPaths)
+	r.GET("/shortest-paths/:id", shortestpathCtrl.GetShortestPathByID)
+	r.PUT("/shortest-paths/:id", shortestpathCtrl.UpdateShortestPath)
+	r.DELETE("/shortest-paths/:id", shortestpathCtrl.DeleteShortestPath)
 
 	r.GET("/distances", distanceCtrl.GetDistances)
 	r.GET("/mst", distanceCtrl.GetMST)

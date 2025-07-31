@@ -195,16 +195,19 @@ ${JSON.stringify(routeData.trip_plan_by_day, null, 2)}
       }
 
       setMessages((prev) => [...prev, { text: tripPlanText, sender: 'bot', isTripPlan: true }]);
-
+      const accIdStr = routeData.accommodation?.id ?? '';
+      const accIdNum = parseInt(accIdStr.replace(/[^\d]/g, ''), 10);
       // สร้างข้อมูล Trip
       const newTrip: TripInterface = {
         Name: keyword,
         Types: 'custom',
         Days: days,
         Con_id: 1,
-        Acc_id: parseInt(routeData.accommodation?.id ?? '0', 10),
+        Acc_id: accIdNum,
       };
       console.log('Payload to create trip:', newTrip);
+      console.log('routeData.accommodation?.id:', routeData.accommodation?.id);
+
 
       // บันทึก Trip
       const savedTrip = await CreateTrip(newTrip);
@@ -298,7 +301,7 @@ else {
         );
 
         const distance = path ? path.distance_km : 0;
-
+        
         const shortestPathData: ShortestpathInterface = {
           TripID: savedTrip.ID,
           Day: act.day,
@@ -306,19 +309,19 @@ else {
           FromCode: fromCode,
           ToCode: toCode,
           Type: 'Activity',
-          Distance: distance,
+          Distance: parseFloat(distance.toString()), // หรือแค่ distance ถ้าเป็น number แล้ว
           ActivityDescription: act.description,
           StartTime: act.startTime,
           EndTime: act.endTime,
         };
-
+        
         try {
-          const spRes = await CreateShortestPath(shortestPathData);
-          console.log('CreateShortestPath success:', spRes);
-        } catch (err) {
-          console.error('CreateShortestPath failed:', err, 'with data:', shortestPathData);
+          console.log("ส่งข้อมูลไป shortest-paths:", JSON.stringify(shortestPathData, null, 2));
+          const res = await CreateShortestPath(shortestPathData);
+          console.log('Test save success:', res);
+        } catch (e) {
+          console.error('Test save fail:', e);
         }
-
         if (!/เช็คอิน|เช็คเอาท์/.test(act.description)) {
           if (currentIndex + 1 < dayPlan.plan.length) {
             dayPlanIndices[act.day] = currentIndex + 1;

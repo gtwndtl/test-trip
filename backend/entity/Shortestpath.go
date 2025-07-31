@@ -17,7 +17,7 @@ type Shortestpath struct {
 	ToCode   string `binding:"required"`           // ต้องมีรหัสปลายทาง
 
 	Type     string  `binding:"required"`             // ประเภท เช่น เดิน/รถ
-	Distance float32 `binding:"required,gte=0"`   // ระยะทาง (>= 0)
+	Distance float32 `binding:"gte=0"`   // ระยะทาง (>= 0)
 
 	ActivityDescription string `binding:"omitempty,max=1000"` // คำบรรยายกิจกรรม ไม่บังคับ
 	StartTime           string `binding:"required"`     // เวลาเริ่ม เช่น "08:00"
