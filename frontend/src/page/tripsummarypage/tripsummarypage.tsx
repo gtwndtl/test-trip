@@ -1,3 +1,4 @@
+// TripSummaryPage.tsx
 import { Table } from 'antd';
 import { useEffect, useState } from 'react';
 import Navbar from '../../navbar/navbar';
@@ -20,28 +21,26 @@ const TripSummaryPage = () => {
     fetchTrip();
   }, [TripID]);
 
-  // Columns สำหรับกิจกรรมแต่ละวัน
   const columns = [
     {
       title: 'เวลา',
-      render: (record: ShortestpathInterface) =>
-        `${record.StartTime} - ${record.EndTime}`,
+      render: (record: ShortestpathInterface) => `${record.StartTime} - ${record.EndTime}`,
       width: 120,
     },
     {
       title: 'กิจกรรม',
       dataIndex: 'ActivityDescription',
-      render: (text: string) =>
-        <span dangerouslySetInnerHTML={{ __html: text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />,
+      render: (text: string) => (
+        <span dangerouslySetInnerHTML={{ __html: text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+      ),
     },
     {
       title: 'รายละเอียด',
-      dataIndex: 'Details', // ถ้ามีข้อมูลรายละเอียดเพิ่มเติม
-      render: () => '-', // คุณสามารถเปลี่ยนให้ dynamic ได้
+      dataIndex: 'Details',
+      render: () => '-',
     },
   ];
 
-  // กลุ่มข้อมูลแยกตามวัน
   const groupedByDay = trip?.ShortestPaths?.reduce((acc, curr) => {
     const day = curr.Day ?? 0;
     if (!acc[day]) acc[day] = [];
@@ -49,9 +48,8 @@ const TripSummaryPage = () => {
     return acc;
   }, {} as Record<number, ShortestpathInterface[]>);
 
-  // แปลงวันเป็นข้อความ เช่น "วันเสาร์ที่ 26 เมษายน 2024"
   const getDayHeaderText = (dayIndex: number): string => {
-    const today = new Date(); // หรือจะเริ่มจาก trip.StartDate ถ้ามี
+    const today = new Date();
     const targetDate = new Date(today);
     targetDate.setDate(today.getDate() + (dayIndex - 1));
 
@@ -65,24 +63,18 @@ const TripSummaryPage = () => {
 
   return (
     <div className="trip-summary-page-container">
-        <Navbar />
+      <Navbar />
       <div className="trip-summary-page-content">
-        <h2 className="trip-summary-title">สรุปแผนการเดินทาง</h2>
-        <div className="trip-summary-subtitle">รายละเอียดการเดินทางและกิจกรรมทั้งหมด</div>
-        <div className="trip-summary-card">
-          {/* ส่วนหัวทริป */}
+        <div className="trip-summary-box">
           <div className="trip-summary-head">
-            <h3>สรุปแผนการเดินทาง {trip?.Name ?? ''}</h3>
+            <h2>สรุปแผนการเดินทาง {trip?.Name ?? ''}</h2>
             <p>{trip?.Days} วัน — 30000บาท — ชิวๆ</p>
           </div>
 
-          {/* ตารางแยกตามวัน */}
           {groupedByDay &&
             Object.entries(groupedByDay).map(([day, activities]) => (
               <div key={day}>
-                <h3 className="trip-day-header">
-                  {getDayHeaderText(Number(day))}
-                </h3>
+                <h3 className="trip-day-header">{getDayHeaderText(Number(day))}</h3>
                 <Table
                   className="trip-summary-table"
                   columns={columns}
@@ -97,7 +89,6 @@ const TripSummaryPage = () => {
       </div>
     </div>
   );
-
 };
 
 export default TripSummaryPage;

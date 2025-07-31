@@ -9,6 +9,7 @@ import type { RestaurantInterface } from "../../interfaces/Restaurant";
 import type { UserInterface } from "../../interfaces/User";
 import type { SignInInterface } from "../../interfaces/SignIn";
 import type { GroqResponse } from "../../interfaces/Groq";
+import type { ChangePasswordInput } from "../../interfaces/ChangePassword";
 
 const apiUrl = "http://localhost:8080";
 const Authorization = localStorage.getItem("token");
@@ -368,7 +369,26 @@ async function SignInUser(signInData: SignInInterface): Promise<{
         localStorage.setItem("token_type", token_type);
         localStorage.setItem("user_id", id.toString());
 
-        return { token, token_type, id };
+        return {
+            message: () => undefined,
+            token,
+            token_type,
+            id
+        };
+    } catch (error) {
+        const errorData = (error as AxiosError).response?.data as { error?: string } | undefined;
+        throw new Error(errorData?.error || (error as AxiosError).message);
+    }
+}
+
+async function ChangePassword(data: ChangePasswordInput): Promise<{ message: string }> {
+    try {
+        const response = await axios.put<{ message: string }>(
+            `${apiUrl}/users/me/password`,
+            data,
+            requestOptions
+        );
+        return response.data;
     } catch (error) {
         const errorData = (error as AxiosError).response?.data as { error?: string } | undefined;
         throw new Error(errorData?.error || (error as AxiosError).message);
@@ -405,6 +425,43 @@ async function PostGroq(prompt: string): Promise<GroqResponse> {
     }
 }
 
+// ฟังก์ชันส่ง OTP
+async function SendOTP(email: string): Promise<{ message: string }> {
+  try {
+    const response = await axios.post<{ message: string }>(
+      `${apiUrl}/send-otp`,
+      { email },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    const errorData = (error as AxiosError).response?.data as { error?: string } | undefined;
+    throw new Error(errorData?.error || (error as AxiosError).message);
+  }
+}
+
+// ฟังก์ชันยืนยัน OTP
+async function VerifyOTP(email: string, otp: string): Promise<{ message: string }> {
+  try {
+    const response = await axios.post<{ message: string }>(
+      `${apiUrl}/verify-otp`,
+      { email, otp },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    const errorData = (error as AxiosError).response?.data as { error?: string } | undefined;
+    throw new Error(errorData?.error || (error as AxiosError).message);
+  }
+}
 
 
 export {
@@ -444,6 +501,9 @@ export {
     CreateUser,
     UpdateUser,
     DeleteUser,
+    ChangePassword,
     GetRouteFromAPI,
     PostGroq,
+    VerifyOTP,
+    SendOTP,
 }

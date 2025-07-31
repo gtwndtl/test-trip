@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import Account from '../../component/settings/account/account';
 import Profile from '../../component/settings/profile/profile';
 import Navbar from '../../navbar/navbar';
 import './settingpage.css';
-import type { MenuProps } from 'antd';
 import { Menu } from 'antd';
+import type { MenuProps } from 'antd';
+import AccountWrapper from './AccountWrapper';
+import ChangePasswordUser from '../../component/settings/edit/password/changepassword';
 
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -14,37 +17,28 @@ const items: MenuItem[] = [
     label: 'Settings',
     type: 'group',
     children: [
-      { key: '1', label: 'Profile' },
-      { key: '2', label: 'Account' },
-      { key: '3', label: 'Privacy' },
-      { key: '4', label: 'Security' },
-      { key: '5', label: 'Language' },
+      { key: '/settings/profile', label: 'Profile' },
+      { key: '/settings/account', label: 'Account' },
+      { key: '/settings/privacy', label: 'Privacy' },
+      { key: '/settings/security', label: 'Security' },
+      { key: '/settings/language', label: 'Language' },
     ],
   },
 ];
 
 const SettingPage = () => {
-  const [selectedKey, setSelectedKey] = useState<string>('1');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // เมื่อเข้ามาครั้งแรก ถ้า path คือ /settings ให้ redirect ไปหน้า default
+  useEffect(() => {
+    if (location.pathname === '/settings') {
+      navigate('/settings/profile');
+    }
+  }, [location.pathname, navigate]);
 
   const onClick: MenuProps['onClick'] = (e) => {
-    setSelectedKey(e.key);
-  };
-
-  const renderContent = () => {
-    switch (selectedKey) {
-      case '1':
-        return <Profile />;
-      case '2':
-        return <Account />;
-      case '3':
-        return <div>Privacy Settings Coming Soon</div>;
-      case '4':
-        return <div>Security Settings Coming Soon</div>;
-      case '5':
-        return <div>Language Settings Coming Soon</div>;
-      default:
-        return <div>Select a setting from the menu</div>;
-    }
+    navigate(e.key); // key = path เช่น "/settings/account"
   };
 
   return (
@@ -55,7 +49,11 @@ const SettingPage = () => {
           <div className="setting-menu">
             <Menu
               onClick={onClick}
-              selectedKeys={[selectedKey]}
+              selectedKeys={[
+                location.pathname.startsWith('/settings/account')
+                  ? '/settings/account'
+                  : location.pathname
+              ]}
               mode="inline"
               items={items}
               style={{
@@ -63,9 +61,19 @@ const SettingPage = () => {
                 background: 'transparent',
               }}
             />
+
           </div>
           <div className="setting-content">
-            {renderContent()}
+            <Routes>
+              <Route path="profile" element={<Profile />} />
+              <Route path="account" element={<AccountWrapper />}>
+                <Route index element={<Account />} />
+                <Route path="change-password" element={<ChangePasswordUser />} />
+              </Route>
+              <Route path="privacy" element={<div>Privacy Settings Coming Soon</div>} />
+              <Route path="security" element={<div>Security Settings Coming Soon</div>} />
+              <Route path="language" element={<div>Language Settings Coming Soon</div>} />
+            </Routes>
           </div>
         </div>
       </div>

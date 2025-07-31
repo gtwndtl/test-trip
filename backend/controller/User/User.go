@@ -150,3 +150,54 @@ func (ctrl *UserController) SignInUser(c *gin.Context) {
         "id":         user.ID,
     })
 }
+
+type ChangePasswordInput struct {
+	CurrentPassword string `json:"currentPassword" binding:"required"`
+	NewPassword     string `json:"newPassword" binding:"required"`
+}
+
+func (ctrl *UserController) ChangePassword(c *gin.Context) {
+    var input ChangePasswordInput
+    if err := c.ShouldBindJSON(&input); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    uid, exists := c.Get("user_id")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "ไม่พบ user ใน token"})
+        return
+    }
+
+    floatID, ok := uid.(float64)
+    if !ok {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถอ่าน user id จาก token ได้"})
+        return
+    }
+    userID := uint(floatID)
+
+    var user entity.User
+    if err := ctrl.DB.First(&user, userID).Error; err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "ไม่พบผู้ใช้งาน"})
+        return
+    }
+
+    if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.CurrentPassword)); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "รหัสผ่านเดิมไม่ถูกต้อง"})
+        return
+    }
+
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.NewPassword), bcrypt.DefaultCost)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถเข้ารหัส รหัสผ่านใหม่ได้"})
+        return
+    }
+
+    user.Password = string(hashedPassword)
+    if err := ctrl.DB.Save(&user).Error; err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถบันทึกรหัสผ่านใหม่ได้"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว"})
+}

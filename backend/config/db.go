@@ -78,6 +78,7 @@ func SetupDatabase() {
 		Lastname:  "Doe",
 		Age:       30,
 		Birthday:  time.Date(1993, 1, 1, 0, 0, 0, 0, time.UTC),
+		Type:	  "user", // กำหนดเป็น 'user' หรือ 'Google' ตามต้องการ
 	}
 	dbSqlite.FirstOrCreate(&user, entity.User{Email: "a@gmail.com"})
 
