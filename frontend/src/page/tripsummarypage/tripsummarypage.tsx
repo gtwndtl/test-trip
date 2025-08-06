@@ -5,6 +5,16 @@ import './tripsummarypage.css';
 import { GetTripById } from '../../services/https';
 import type { TripInterface } from '../../interfaces/Trips';
 import type { ShortestpathInterface } from '../../interfaces/Shortestpath';
+import {
+  EditOutlined,
+  SaveOutlined,
+  CloseOutlined,
+  ClockCircleOutlined,
+  EnvironmentOutlined,
+  CheckCircleOutlined,
+  InfoCircleOutlined
+} from '@ant-design/icons';
+
 
 const { Option } = Select;
 
@@ -14,7 +24,6 @@ const TripSummaryPage = () => {
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [editedData, setEditedData] = useState<Record<number, ShortestpathInterface[]>>({});
 
-  // สมมุติ list สถานที่ (ควรมาจาก API จริง)
   const availableLocations = ['BKK', 'CNX', 'HKT', 'KBI', 'UBP'];
 
   useEffect(() => {
@@ -39,7 +48,7 @@ const TripSummaryPage = () => {
     if (groupedByDay && groupedByDay[day]) {
       setEditedData((prev) => ({
         ...prev,
-        [day]: JSON.parse(JSON.stringify(groupedByDay[day])) // deep copy
+        [day]: JSON.parse(JSON.stringify(groupedByDay[day]))
       }));
     }
   };
@@ -68,45 +77,72 @@ const TripSummaryPage = () => {
     setEditedData({});
   };
 
-  const columns = (day: number) => [
-    {
-      title: 'เวลา',
-      render: (record: ShortestpathInterface) => `${record.StartTime} - ${record.EndTime}`,
-      width: 120,
+const columns = (day: number) => [
+  {
+    title: (
+      <>
+        <ClockCircleOutlined style={{ marginRight: 6 }} />
+        เวลา
+      </>
+    ),
+    render: (record: ShortestpathInterface) => `${record.StartTime} - ${record.EndTime}`,
+    width: 140,
+  },
+  {
+    title: (
+      <>
+        <EnvironmentOutlined style={{ marginRight: 6 }} />
+        สถานที่
+      </>
+    ),
+    render: (_: any, record: ShortestpathInterface, index: number) => {
+      if (editingDay === day) {
+        return (
+          <Select
+            value={editedData[day]?.[index]?.ToCode}
+            onChange={(value) => handleLocationChange(day, index, value)}
+            style={{ width: 140 }}
+          >
+            {availableLocations.map((loc) => (
+              <Option key={loc} value={loc}>
+                {loc}
+              </Option>
+            ))}
+          </Select>
+        );
+      }
+      return record.ToCode;
     },
-    {
-      title: 'สถานที่',
-      render: (_: any, record: ShortestpathInterface, index: number) => {
-        if (editingDay === day) {
-          return (
-            <Select
-              value={editedData[day]?.[index]?.ToCode}
-              onChange={(value) => handleLocationChange(day, index, value)}
-              style={{ width: 120 }}
-            >
-              {availableLocations.map((loc) => (
-                <Option key={loc} value={loc}>{loc}</Option>
-              ))}
-            </Select>
-          );
-        }
-        return record.ToCode;
-      },
-      width: 120,
-    },
-    {
-      title: 'กิจกรรม',
-      dataIndex: 'ActivityDescription',
-      render: (text: string) => (
-        <span dangerouslySetInnerHTML={{ __html: text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
-      ),
-    },
-    {
-      title: 'รายละเอียด',
-      dataIndex: 'Details',
-      render: () => '-',
-    },
-  ];
+    width: 160,
+  },
+  {
+    title: (
+      <>
+        <CheckCircleOutlined style={{ marginRight: 6 }} />
+        กิจกรรม
+      </>
+    ),
+    dataIndex: 'ActivityDescription',
+    render: (text: string) => (
+      <span
+        dangerouslySetInnerHTML={{
+          __html: text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'),
+        }}
+      />
+    ),
+  },
+  {
+    title: (
+      <>
+        <InfoCircleOutlined style={{ marginRight: 6 }} />
+        รายละเอียด
+      </>
+    ),
+    dataIndex: 'Details',
+    render: () => '-',
+  },
+];
+
 
   const getDayHeaderText = (dayIndex: number): string => {
     const today = new Date();
@@ -127,8 +163,8 @@ const TripSummaryPage = () => {
       <div className="trip-summary-page-content">
         <div className="trip-summary-box">
           <div className="trip-summary-head">
-            <h2>สรุปแผนการเดินทาง {trip?.Name ?? ''}</h2>
-            <p>{trip?.Days} วัน — 30000บาท — ชิวๆ</p>
+            <h1>{trip?.Name}</h1>
+            <p>แผนการเดินทาง {trip?.Days} วัน</p>
           </div>
 
           {groupedByDay && Object.entries(groupedByDay).map(([day, activities]) => {
@@ -136,28 +172,25 @@ const TripSummaryPage = () => {
             const isEditing = editingDay === dayNum;
 
             return (
-              <div key={day}>
-                <h3 className="trip-day-header">
-                  <span className="day-header-text">
-                    {getDayHeaderText(dayNum)}
-                  </span>
+              <div key={day} className="trip-day-section">
+                <div className="trip-day-header">
+                  <span>{getDayHeaderText(dayNum)}</span>
                   <div className="button-edit-group">
                     {isEditing ? (
                       <>
-                        <Button danger onClick={handleCancel}>
-                          Cancel
-                        </Button>
-                        <Button type="primary" onClick={() => handleSave(dayNum)} style={{ marginLeft: 8 }}>
-                          Save
+                        <Button icon={<CloseOutlined />} onClick={handleCancel}>ยกเลิก</Button>
+                        <Button type="primary" icon={<SaveOutlined />} onClick={() => handleSave(dayNum)} style={{ marginLeft: 8 }}>
+                          บันทึก
                         </Button>
                       </>
                     ) : (
-                      <Button type="default" onClick={() => handleEditClick(dayNum)} style={{ marginLeft: 10 }}>
-                        Edit
+                      <Button icon={<EditOutlined />} onClick={() => handleEditClick(dayNum)} style={{ marginLeft: 8 }}>
+                        แก้ไข
                       </Button>
                     )}
                   </div>
-                </h3>
+                </div>
+
                 <Table
                   className="trip-summary-table"
                   columns={columns(dayNum)}
