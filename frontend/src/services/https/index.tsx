@@ -1,9 +1,12 @@
 import axios, { AxiosError, type AxiosResponse } from "axios";
+import type { DefaultOptionType } from 'antd/es/select';
 
 import type { AccommodationInterface } from "../../interfaces/Accommodation";
 import type { ConditionInterface } from "../../interfaces/Condition";
 import type { ShortestpathInterface } from "../../interfaces/Shortestpath";
 import type { TripInterface } from "../../interfaces/Trips";
+import type { ReviewInterface } from "../../interfaces/Review";
+import type { RecommendInterface } from "../../interfaces/Recommend";
 import type { LandmarkInterface } from "../../interfaces/Landmark";
 import type { RestaurantInterface } from "../../interfaces/Restaurant";
 import type { UserInterface } from "../../interfaces/User";
@@ -26,6 +29,13 @@ const requestOptions = {
     },
 
 };
+export interface BulkAccPayload {
+  trip_id: number;
+  acc_code: string;    // "A123"
+  days?: number[];     // ถ้าไม่ส่ง = ทั้งทริป
+  scope?: 'both'|'start'|'end';
+}
+
 
 async function GetAllAccommodations(): Promise<AccommodationInterface[]> {
     try {
@@ -153,6 +163,17 @@ async function UpdateShortestPath(id: number, shortestPath: ShortestpathInterfac
     }
 }
 
+
+async function BulkUpdateAccommodation(payload: BulkAccPayload) {
+  try {
+    const { data } = await axios.put(`${apiUrl}/shortest-paths/accommodation/bulk`, payload, requestOptions);
+    return data;
+  } catch (err) {
+    const ax = err as AxiosError<any>;
+    throw new Error((ax.response?.data as any)?.error || ax.message);
+  }
+}
+
 async function DeleteShortestPath(id: number): Promise<void> {
     try {
         await axios.delete(`${apiUrl}/shortest-paths/${id}`, requestOptions);
@@ -212,6 +233,89 @@ async function GetAllLandmarks(): Promise<LandmarkInterface[]> {
     } catch (error) {
         throw new Error((error as AxiosError).message);
     }
+}
+
+async function GetLandmarksAndRestuarantforEdit(params: {
+  type: 'landmark' | 'restaurant';
+  prev: string;
+  next: string;
+  radius_m?: number;
+  limit?: number;
+  exclude?: string;
+}): Promise<DefaultOptionType[]> {
+  try {
+    const { data } = await axios.get(`${apiUrl}/suggest`, {
+      ...requestOptions,
+      params,
+    });
+
+    // คาดโครงสร้างตอบกลับ: { type, count, data: [...] }
+    const items: any[] = Array.isArray(data?.data) ? data.data : [];
+    const fallbackPrefix = params.type === 'restaurant' ? 'R' : 'P';
+
+    const opts: DefaultOptionType[] = items.map((it: any) => {
+      const id = it?.id;
+      const code: string =
+        (typeof it?.code === 'string' && it.code.trim()) ?
+          it.code.trim() :
+          `${fallbackPrefix}${id}`;
+
+      const name = (it?.name ?? '').toString().trim();
+      const cat  = (it?.category ?? '').toString().trim();
+      const totalM = typeof it?.total_m === 'number' ? it.total_m : undefined;
+      const km = totalM != null ? ` • ~${(totalM / 1000).toFixed(1)} กม.` : '';
+
+      const base = name || code;
+      const catPart = cat ? ` - ${cat}` : '';
+
+      return {
+        value: code,
+        label: `${base}${catPart} (${code})${km}`,
+      };
+    });
+
+    return opts;
+  } catch (err) {
+    const ax = err as AxiosError;
+    const msg =
+      (ax.response?.data as any)?.error ||
+      ax.message ||
+      'Suggest API failed';
+    throw new Error(String(msg));
+  }
+}
+
+async function GetAccommodationSuggestionsForEdit(params: {
+  trip_id: number;
+  day?: number;
+  strategy?: 'center' | 'sum';
+  radius_m?: number;
+  limit?: number;
+  exclude?: string;
+  sp_table?: string; // e.g. 'shortestpaths'
+}): Promise<DefaultOptionType[]> {
+  try {
+    const { data } = await axios.get(`${apiUrl}/suggest/accommodations`, {
+      ...requestOptions,
+      params,
+    });
+    const items: any[] = Array.isArray(data?.data) ? data.data : [];
+    return items.map((it: any) => {
+      const code = it.code || `A${it.id}`;
+      const name = (it.name ?? '').toString().trim();
+      const cat = (it.category ?? '').toString().trim();
+      const base = name || code;
+      const distM = typeof it.avg_m === 'number' && it.avg_m > 0 ? it.avg_m : it.dist_center_m;
+      const km = typeof distM === 'number' ? ` • ~${(distM / 1000).toFixed(1)} กม.` : '';
+      const catText = cat ? ` - ${cat}` : '';
+      return { value: code, label: `${base}${catText} (${code})${km}` };
+    });
+  } catch (err) {
+    const ax = err as AxiosError<any>;
+    const resp: any = ax.response?.data;
+    const detail = resp?.detail || ax.message;
+    throw new Error(detail);
+  }
 }
 
 async function GetLandmarkById(id: number): Promise<LandmarkInterface> {
@@ -463,6 +567,125 @@ async function VerifyOTP(email: string, otp: string): Promise<{ message: string 
   }
 }
 
+async function GetAllReviews(): Promise<ReviewInterface[]> {
+  try {
+    const response = await axios.get<ReviewInterface[]>(`${apiUrl}/reviews`, requestOptions);
+    return response.data;
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+async function GetReviewById(id: number): Promise<ReviewInterface> {
+  try {
+    const response = await axios.get<ReviewInterface>(`${apiUrl}/reviews/${id}`, requestOptions);
+    return response.data;
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+async function CreateReview(review: ReviewInterface): Promise<ReviewInterface> {
+  try {
+    const response = await axios.post<ReviewInterface>(`${apiUrl}/reviews`, review, requestOptions);
+    return response.data;
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+async function UpdateReview(id: number, review: ReviewInterface): Promise<ReviewInterface> {
+  try {
+    const response = await axios.put<ReviewInterface>(`${apiUrl}/reviews/${id}`, review, requestOptions);
+    return response.data;
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+async function DeleteReview(id: number): Promise<void> {
+  try {
+    await axios.delete(`${apiUrl}/reviews/${id}`, requestOptions);
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+async function GetAllRecommends(): Promise<RecommendInterface[]> {
+  try {
+    const response = await axios.get<RecommendInterface[]>(`${apiUrl}/recommends`, requestOptions);
+    return response.data;
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+async function GetRecommendById(id: number): Promise<RecommendInterface> {
+  try {
+    const response = await axios.get<RecommendInterface>(`${apiUrl}/recommends/${id}`, requestOptions);
+    return response.data;
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+async function CreateRecommend(recommend: RecommendInterface): Promise<RecommendInterface> {
+  try {
+    const response = await axios.post<RecommendInterface>(`${apiUrl}/recommends`, recommend, requestOptions);
+    return response.data;
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+async function UpdateRecommend(id: number, recommend: RecommendInterface): Promise<RecommendInterface> {
+  try {
+    const response = await axios.put<RecommendInterface>(`${apiUrl}/recommends/${id}`, recommend, requestOptions);
+    return response.data;
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+async function DeleteRecommend(id: number): Promise<void> {
+  try {
+    await axios.delete(`${apiUrl}/recommends/${id}`, requestOptions);
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+async function ExportTripToTemplate(tripId: number): Promise<string> {
+  const token = localStorage.getItem("token");
+  const tokenType = localStorage.getItem("token_type");
+
+  if (!token || !tokenType) {
+    throw new Error("ยังไม่ได้ login หรือ token หาย");
+  }
+
+  try {
+    const response = await axios.post(`${apiUrl}/trips/${tripId}/export`, 
+      { trip_id: tripId }, // ✅ ส่ง JSON ไปด้วย
+      {
+        headers: {
+          Authorization: `${tokenType} ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const url = response.data.url || response.data.download_url;
+    if (!url) {
+      throw new Error("ไม่พบลิงก์สำหรับดาวน์โหลดเอกสาร");
+    }
+
+    return url;
+  } catch (error) {
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+
 
 export {
     SignInUser,
@@ -471,6 +694,16 @@ export {
     CreateAccommodation,
     UpdateAccommodation,
     DeleteAccommodation,
+    GetAllReviews,
+    GetReviewById,
+    CreateReview,
+    UpdateReview,
+    DeleteReview,
+    GetAllRecommends,
+    GetRecommendById,
+    CreateRecommend,
+    UpdateRecommend,
+    DeleteRecommend,
     GetAllConditions,
     GetConditionById,
     CreateCondition,
@@ -480,6 +713,7 @@ export {
     GetShortestPathById,
     CreateShortestPath,
     UpdateShortestPath,
+    BulkUpdateAccommodation,
     DeleteShortestPath,
     GetAllTrips,
     GetTripById,
@@ -491,6 +725,8 @@ export {
     CreateLandmark,
     UpdateLandmark,
     DeleteLandmark,
+    GetLandmarksAndRestuarantforEdit,
+    GetAccommodationSuggestionsForEdit,
     GetAllRestaurants,
     GetRestaurantById,
     CreateRestaurant,
@@ -506,4 +742,5 @@ export {
     PostGroq,
     VerifyOTP,
     SendOTP,
+    ExportTripToTemplate,
 }
